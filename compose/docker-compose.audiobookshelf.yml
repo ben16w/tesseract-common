@@ -1,0 +1,17 @@
+---
+
+services:
+  audiobookshelf:
+    container_name: audiobookshelf
+    image: ghcr.io/advplyr/audiobookshelf:latest
+    restart: always
+    environment:
+      AUDIOBOOKSHELF_UID: ${TESSERACT_UID}
+      AUDIOBOOKSHELF_GID: ${TESSERACT_UID}
+    ports:
+      - 13378:80
+    volumes:
+      - "${TESSERACT_APPDATA_PATH}/audiobookshelf_config:/config"
+      - "${TESSERACT_APPDATA_PATH}/audiobookshelf_metadata:/metadata"
+      - "${TESSERACT_DATA_PATH}/Audio/Audiobooks:/audiobooks"
+      - "${TESSERACT_DATA_PATH}/Audio/Podcasts:/podcasts"

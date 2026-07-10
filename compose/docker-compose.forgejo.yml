@@ -1,0 +1,71 @@
+services:
+  forgejo:
+    image: codeberg.org/forgejo/forgejo:15-rootless
+    container_name: forgejo
+    user: "${TESSERACT_UID}:${TESSERACT_GID}"
+    restart: always
+    ports:
+      - '3007:3000'
+      - '222:2222'
+    environment:
+      USER_UID: ${TESSERACT_UID}
+      USER_GID: ${TESSERACT_GID}
+
+      FORGEJO____APP_NAME: "Forgejo"
+
+      FORGEJO__server__DOMAIN: "forgejo.${TESSERACT_DOMAIN}"
+      FORGEJO__server__SSH_DOMAIN: "${TESSERACT_DOMAIN}"
+      FORGEJO__server__ROOT_URL: "https://forgejo.${TESSERACT_DOMAIN}"
+
+      FORGEJO__server__HTTP_PORT: 3000
+      FORGEJO__server__SSH_LISTEN_PORT: 222
+      FORGEJO__server__SSH_PORT: 222
+
+      FORGEJO__webhook__ALLOWED_HOST_LIST: "*.${TESSERACT_DOMAIN}"
+      FORGEJO__migrations__ALLOW_LOCALNETWORKS: true
+
+      FORGEJO__service__REGISTER_MANUAL_CONFIRM: "true"
+      FORGEJO__service__REQUIRE_SIGNIN_VIEW: "false"
+      FORGEJO__service__ENABLE_NOTIFY_MAIL: "true"
+
+      FORGEJO__openid__ENABLE_OPENID_SIGNIN: "false"
+      FORGEJO__openid__ENABLE_OPENID_SIGNUP: "false"
+
+      FORGEJO__database__DB_TYPE: "sqlite3"
+
+      FORGEJO__mailer__ENABLED: "true"
+      FORGEJO__mailer__SMTP_ADDR: "${TESSERACT_EMAIL_HOST}"
+      FORGEJO__mailer__SMTP_PORT: "${TESSERACT_EMAIL_PORT}"
+      FORGEJO__mailer__FROM: "Gitea<${TESSERACT_EMAIL_USERNAME}>"
+      FORGEJO__mailer__USER: "${TESSERACT_EMAIL_USERNAME}"
+      FORGEJO__mailer__PASSWD: "${TESSERACT_EMAIL_PASSWORD}"
+
+      FORGEJO__actions__ENABLED: "true"
+      FORGEJO__actions__DEFAULT_ACTIONS_URL: "https://data.forgejo.org"
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - "${TESSERACT_APPDATA_PATH}/forgejo_data:/var/lib/gitea"
+
+  forgejo_runner:
+    image: data.forgejo.org/forgejo/runner:12
+    container_name: forgejo_runner
+    user: root
+    restart: always
+    depends_on:
+      - forgejo
+    volumes:
+      - "${TESSERACT_APPDATA_PATH}/forgejo_runner:/data"
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      URL: "https://forgejo.${TESSERACT_DOMAIN}"
+      UUID: "${TESSERACT_FORGEJO_RUNNER_UUID}"
+      TOKEN: "${TESSERACT_FORGEJO_RUNNER_TOKEN}"
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        if [ ! -f /data/config.yml ]; then
+          forgejo-runner generate-config > /data/config.yml
+          REPL="  connections:\n    forgejo:\n      url: $$URL\n      uuid: $$UUID\n      token: $$TOKEN"
+          sed -i "s|^  connections:$$|$$REPL|" /data/config.yml
+        fi
+        exec forgejo-runner daemon --config /data/config.yml

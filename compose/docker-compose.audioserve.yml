@@ -1,0 +1,16 @@
+---
+
+services:
+  audioserve:
+    image: ben16w/audioserve:latest
+    container_name: audioserve
+    restart: always
+    #user: "${TESSERACT_UID}:${TESSERACT_GID}"
+    ports:
+      - "3000:3000"
+    environment:
+      AUDIOSERVE_SHARED_SECRET: "${TESSERACT_DOCKER_PASSWORD}"
+      AUDIOSERVE_BASE_DIRS: "/audio"
+    volumes:
+#      - ${TESSERACT_APPDATA_PATH}/audioserve_config:/home/audioserve/.audioserve
+      - "${TESSERACT_DATA_PATH}/Audio:/audio:ro"

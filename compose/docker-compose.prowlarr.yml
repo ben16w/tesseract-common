@@ -1,0 +1,15 @@
+---
+
+services:
+  prowlarr:
+    image: lscr.io/linuxserver/prowlarr:latest
+    container_name: prowlarr
+    restart: always
+    ports:
+      - 9696:9696
+    environment:
+      PUID: "${TESSERACT_UID}"
+      PGID: "${TESSERACT_GID}"
+      TZ: "${TESSERACT_TZ}"
+    volumes:
+      - "${TESSERACT_APPDATA_PATH}/prowlarr_config:/config"

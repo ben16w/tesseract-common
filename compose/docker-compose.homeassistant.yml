@@ -1,0 +1,26 @@
+---
+
+services:
+  homeassistant:
+    image: ghcr.io/home-assistant/home-assistant:stable
+    container_name: homeassistant
+    restart: always
+    network_mode: host
+    devices:
+      - /dev/ttyUSB0:/dev/ttyUSB0
+    volumes:
+      - "${TESSERACT_APPDATA_PATH}/homeassistant_config:/config"
+      - /etc/localtime:/etc/localtime:ro
+      - /run/dbus:/run/dbus:ro
+      - /dev/serial/by-id:/dev/serial/by-id
+
+  homeassistant_matter:
+    image: ghcr.io/home-assistant-libs/python-matter-server:stable
+    container_name: homeassistant_matter
+    restart: always
+    network_mode: host
+    security_opt:
+      - apparmor=unconfined
+    volumes:
+      - /run/dbus:/run/dbus:ro
+      - "${TESSERACT_APPDATA_PATH}/homeassistant_matter:/data"

@@ -1,0 +1,14 @@
+---
+
+services:
+  homer:
+    image: b4bz/homer
+    container_name: homer
+    restart: always
+    ports:
+      - 8080:8080
+    environment:
+      UID: "${TESSERACT_UID}"
+      GID: "${TESSERACT_GID}"
+    volumes:
+      - "${TESSERACT_APPDATA_PATH}/homer_config:/www/assets"

@@ -1,0 +1,19 @@
+---
+
+services:
+  radarr:
+    image: lscr.io/linuxserver/radarr:latest
+    container_name: radarr
+    restart: always
+    ports:
+      - 7878:7878
+    environment:
+      PUID: "${TESSERACT_UID}"
+      PGID: "${TESSERACT_GID}"
+      TZ: "${TESSERACT_TZ}"
+      TESSERACT_MODS: ghcr.io/gilbn/theme.park:radarr
+      TP_THEME: overseerr
+    volumes:
+      - "${TESSERACT_APPDATA_PATH}/radarr_config:/config"
+      - "${TESSERACT_DATA_PATH}/Movies:/movies"
+      - "${TESSERACT_LOCAL_PATH}/transmission_downloads:/transmission_downloads"

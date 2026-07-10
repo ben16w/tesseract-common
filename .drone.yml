@@ -1,0 +1,47 @@
+---
+kind: pipeline
+type: docker
+name: test
+
+trigger:
+  event:
+    - push
+    - custom
+
+steps:
+  - name: lint
+    image: docker:dind
+    commands:
+      - apk update
+      - apk add --upgrade expat
+      - apk add bash make python3 py3-pip
+      - make install-venv
+      - make lint
+
+  - name: notify
+    image: drillster/drone-email
+    settings:
+      host:
+        from_secret: EMAIL_HOST
+      username:
+        from_secret: EMAIL_USERNAME
+      password:
+        from_secret: EMAIL_PASSWORD
+      from:
+        from_secret: EMAIL_USERNAME
+      port:
+        from_secret: EMAIL_PORT
+      recipients:
+        from_secret: EMAIL_USERNAME
+      recipients_only: true
+      subject: "Drone: Build #${DRONE_BUILD_NUMBER} failed"
+      body: |
+        <p>Build #${DRONE_BUILD_NUMBER} failed!</p>
+        <ul>
+        <li>Repo: ${DRONE_REPO}</li>
+        <li>Commit: <code>${DRONE_COMMIT_SHA}</code> by ${DRONE_COMMIT_AUTHOR}</li>
+        <li>Link: <a href="${DRONE_BUILD_LINK}">${DRONE_BUILD_LINK}</a></li>
+        </ul>
+    when:
+      status:
+        - failure

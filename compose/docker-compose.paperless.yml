@@ -1,0 +1,69 @@
+---
+
+services:
+  paperless:
+    image: ghcr.io/paperless-ngx/paperless-ngx:latest
+    container_name: paperless
+    restart: always
+    depends_on:
+      - paperless_db
+      - paperless_broker
+      - paperless_gotenberg
+      - paperless_tika
+    ports:
+      - 8000:8000
+    environment:
+      PAPERLESS_URL: "https://paper.${TESSERACT_DOMAIN}"
+      USERMAP_UID: ${TESSERACT_UID}
+      USERMAP_GID: ${TESSERACT_GID}
+      PAPERLESS_ADMIN_USER: ${TESSERACT_DOCKER_USERNAME}
+      PAPERLESS_ADMIN_PASSWORD: ${TESSERACT_DOCKER_PASSWORD}
+      PAPERLESS_SECRET_KEY: "${TESSERACT_PAPERLESS_SECRET_KEY}"
+      PAPERLESS_TIME_ZONE: "${TESSERACT_TZ}"
+      PAPERLESS_OCR_LANGUAGE: eng
+      PAPERLESS_CONSUMER_POLLING: 3600
+      PAPERLESS_REDIS: redis://paperless_broker:6379
+      PAPERLESS_TASK_WORKERS: 2
+      PAPERLESS_THREADS_PER_WORKER: 3
+      PAPERLESS_TIKA_ENABLED: 1
+      PAPERLESS_TIKA_GOTENBERG_ENDPOINT: http://paperless_gotenberg:3000
+      PAPERLESS_TIKA_ENDPOINT: http://paperless_tika:9998
+      PAPERLESS_DBHOSTL: paperless_db
+      PAPERLESS_DBNAME: paperless_database
+      PAPERLESS_DBUSER: paperless_user
+      PAPERLESS_DBPASS: ${TESSERACT_SQL_PASSWORD}
+    volumes:
+      - "${TESSERACT_APPDATA_PATH}/paperless_data:/usr/src/paperless/data"
+      - "${TESSERACT_DATA_PATH}/Paperless:/usr/src/paperless/media"
+      - "${TESSERACT_DATA_PATH}/Import:/usr/src/paperless/consume"
+
+  paperless_db:
+    image: docker.io/library/postgres:13
+    container_name: paperless_db
+    restart: always
+    environment:
+      POSTGRES_DB: paperless_database
+      POSTGRES_USER: paperless_user
+      POSTGRES_PASSWORD: ${TESSERACT_SQL_PASSWORD}
+    volumes:
+      - "${TESSERACT_APPDATA_PATH}/paperless_db:/var/lib/postgresql/data"
+
+  paperless_broker:
+    image: docker.io/library/redis:7
+    container_name: paperless_broker
+    restart: always
+    volumes:
+      - "${TESSERACT_APPDATA_PATH}/paperless_redis:/data"
+
+  paperless_gotenberg:
+    image: docker.io/gotenberg/gotenberg:7.4
+    container_name: paperless_gotenberg
+    restart: always
+    command:
+      - "gotenberg"
+      - "--chromium-disable-routes=true"
+
+  paperless_tika:
+    image: ghcr.io/paperless-ngx/tika:latest
+    container_name: paperless_tika
+    restart: always

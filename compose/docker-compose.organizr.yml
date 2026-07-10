@@ -1,0 +1,15 @@
+---
+
+services:
+    organizr:
+        image: organizr/organizr:latest
+        container_name: organizr
+        restart: always
+        ports:
+            - 80:80
+        environment:
+            PUID: "${TESSERACT_UID}"
+            PGID: "${TESSERACT_GID}"
+            TZ: "${TESSERACT_TZ}"
+        volumes:
+            - "${TESSERACT_APPDATA_PATH}/organizr_config:/config"

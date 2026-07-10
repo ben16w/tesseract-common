@@ -1,0 +1,19 @@
+---
+
+services:
+  sonarr:
+    image: lscr.io/linuxserver/sonarr:latest
+    container_name: sonarr
+    restart: always
+    ports:
+      - 8989:8989
+    environment:
+      PUID: "${TESSERACT_UID}"
+      PGID: "${TESSERACT_GID}"
+      TZ: "${TESSERACT_TZ}"
+      TESSERACT_MODS: ghcr.io/gilbn/theme.park:sonarr
+      TP_THEME: overseerr
+    volumes:
+      - "${TESSERACT_APPDATA_PATH}/sonarr_config:/config"
+      - "${TESSERACT_DATA_PATH}/Tvshows:/tv"
+      - "${TESSERACT_LOCAL_PATH}/transmission_downloads:/transmission_downloads"

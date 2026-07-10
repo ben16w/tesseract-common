@@ -1,0 +1,18 @@
+---
+
+services:
+  kasm:
+    image: lscr.io/linuxserver/kasm:latest
+    container_name: kasm
+    privileged: true
+    restart: always
+    ports:
+      - 3000:3000 # Port is https!
+      - 4443:4443 # Port is https!
+    environment:
+      - KASM_PORT=443
+      - TZ=Europe/London
+    volumes:
+      #- "${TESSERACT_APPDATA_PATH}/kasm_data:/opt" # Big folder, relocated below
+      - "/root/kasm_data:/opt"
+      - "${TESSERACT_APPDATA_PATH}/kasm_profiles:/profiles"

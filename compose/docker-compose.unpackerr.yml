@@ -1,0 +1,15 @@
+---
+
+services:
+  unpackerr:
+    image: ghcr.io/hotio/unpackerr
+    container_name: unpackerr
+    restart: always
+    environment:
+      PUID: "${TESSERACT_UID}"
+      PGID: "${TESSERACT_GID}"
+      TZ: "${TESSERACT_TZ}"
+      UMASK: 002
+    volumes:
+      - "${TESSERACT_APPDATA_PATH}/unpackerr_config:/config"
+      - "${TESSERACT_LOCAL_PATH}/transmission_downloads:/transmission_downloads"

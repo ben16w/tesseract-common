@@ -1,0 +1,17 @@
+---
+
+services:
+  jdownloader:
+    image: jlesage/jdownloader-2
+    container_name: jdownloader
+    restart: always
+    #user: 1001:100
+    ports:
+      - "5800:5800"
+    environment:
+      USER_ID: "${TESSERACT_UID}"
+      GROUP_ID: "${TESSERACT_GID}"
+      TZ: "${TESSERACT_TZ}"
+    volumes:
+      - "${TESSERACT_APPDATA_PATH}/jdownloader_config:/config"
+      - "${TESSERACT_DATA_PATH}/Downloads/jdownloader:/output"
