@@ -348,7 +348,7 @@ molecule cmd="test" role="" scenario="default" destroy="true": _venv _docker _do
     VENV_DIR="$(realpath "{{venv}}")"
     (
         cd "$(dirname "${moleculedir}")"
-        VIRTUAL_ENV="${VENV_DIR}" "${VENV_DIR}/bin/molecule" "{{cmd}}" "${args[@]}"
+        PATH="${VENV_DIR}/bin:${PATH}" VIRTUAL_ENV="${VENV_DIR}" "${VENV_DIR}/bin/molecule" "{{cmd}}" "${args[@]}"
     )
 
 # ── deploy ─────────────────────────────────────────────────────────────────────
