@@ -123,7 +123,7 @@ lint-shell: _venv
 
 # Validate Docker Compose files
 [group('lint')]
-lint-docker: _docker
+lint-docker: _venv
     #!/usr/bin/env bash
     set -euo pipefail
     echo -e "{{info}} Linting Docker Compose files..."
@@ -131,7 +131,7 @@ lint-docker: _docker
         ! -path "./.venv/*" \
         ! -path "./.ansible/*" \
         ! -path "./ansible_collections/*" \
-        -exec docker compose -f {} config --quiet \;
+        -exec {{venv}}/bin/compose-lint {} +
     echo -e "{{ok}} Docker lint passed."
 
 # Lint Python files with flake8
