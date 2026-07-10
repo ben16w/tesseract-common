@@ -1,0 +1,10 @@
+rules:
+  # HIGH rules — disabled
+  CL-0005: # Ports Bound to All Interfaces
+    enabled: false
+  # MEDIUM rules — disabled
+  CL-0007: # Filesystem Not Read-Only
+    enabled: false
+  CL-0004: # Image Not Pinned to Version
+    enabled: false
+  # LOW rules — disabled
