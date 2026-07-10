@@ -110,7 +110,7 @@ lint-yaml: _venv
 
 # Lint shell scripts with shellcheck
 [group('lint')]
-lint-shell:
+lint-shell: _venv
     #!/usr/bin/env bash
     set -euo pipefail
     echo -e "{{info}} Linting shell scripts..."
@@ -118,7 +118,7 @@ lint-shell:
         ! -path "./.venv/*" \
         ! -path "./.ansible/*" \
         ! -path "./ansible_collections/*" \
-        -exec shellcheck -S warning {} +
+        -exec {{venv}}/bin/shellcheck -S warning {} +
     echo -e "{{ok}} Shell lint passed."
 
 # Validate Docker Compose files
