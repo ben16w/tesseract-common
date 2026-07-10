@@ -43,10 +43,10 @@ fi
 
 # Self-update
 echo "Updating setup.sh..."
-curl -sSL "$BASE_URL/setup.sh" -o setup.sh
+curl -fsSL "$BASE_URL/setup.sh" -o setup.sh || echo "Warning: Could not update setup.sh, skipping."
 
 # Download Justfile
 echo "Downloading Justfile..."
-curl -sSL "$BASE_URL/Justfile" -o Justfile
+curl -fsSL "$BASE_URL/Justfile" -o Justfile || echo "Warning: Could not download Justfile, skipping."
 
 echo "Done. Run 'just install-venv' to set up the virtual environment."
