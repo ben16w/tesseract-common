@@ -20,7 +20,7 @@ if command -v apt-get >/dev/null 2>&1; then
     if [ -n "$missing" ]; then
         echo "Installing$missing..."
         $SUDO apt-get update -qq
-        $SUDO apt-get install -y -qq $missing
+        $SUDO apt-get install -y -qq "$missing"
     fi
 elif command -v apk >/dev/null 2>&1; then
     missing=""
@@ -31,7 +31,7 @@ elif command -v apk >/dev/null 2>&1; then
     done
     if [ -n "$missing" ]; then
         echo "Installing$missing..."
-        apk add --no-cache $missing
+        apk add --no-cache "$missing"
     fi
 fi
 
