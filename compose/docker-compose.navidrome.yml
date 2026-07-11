@@ -5,6 +5,8 @@ services:
     image: deluan/navidrome:latest
     container_name: navidrome
     user: "${TESSERACT_UID}:${TESSERACT_GID}"
+    healthcheck:
+      test: wget -qO /dev/null http://localhost:4533/ping || exit 1
     restart: always
     ports:
       - "4533:4533"

@@ -10,6 +10,8 @@ services:
   tdarr:
     container_name: tdarr
     image: haveagitgat/tdarr:latest
+    healthcheck:
+      test: curl -f http://localhost:8265/ || exit 1
     restart: always
     #network_mode: bridge # Don't like that tdarr uses bridge
     ports:

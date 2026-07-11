@@ -4,6 +4,8 @@ services:
     organizr:
         image: organizr/organizr:latest
         container_name: organizr
+        healthcheck:
+          test: curl -f http://localhost:80/ || exit 1
         restart: always
         ports:
             - 80:80

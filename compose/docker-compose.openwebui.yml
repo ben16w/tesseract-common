@@ -4,6 +4,8 @@ services:
   openwebui:
     image: ghcr.io/open-webui/open-webui:main
     container_name: openwebui
+    healthcheck:
+      test: curl -f http://localhost:8080/ || exit 1
     restart: always
     ports:
       - "3004:8080"
@@ -41,6 +43,8 @@ services:
   openwebui_tika:
     image: apache/tika:latest-full
     container_name: openwebui_tika
+    healthcheck:
+      test: curl -f http://localhost:9998/ || exit 1
     restart: always
 
   openwebui_playwright:

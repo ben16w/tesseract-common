@@ -4,6 +4,8 @@ services:
   jenkins:
     image: jenkins/jenkins:lts-jdk11
     container_name: jenkins
+    healthcheck:
+      test: curl -f http://localhost:8080/login || exit 1
     restart: always
     user: root
     ports:

@@ -4,6 +4,8 @@ services:
   homepage:
     image: "git.tepig.${TESSERACT_DOMAIN}/tesseract/homepage:latest"
     container_name: homepage
+    healthcheck:
+      test: curl -f http://localhost:80/ || exit 1
     restart: always
     pull_policy: always
     ports:

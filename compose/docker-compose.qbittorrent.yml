@@ -4,6 +4,8 @@ services:
   qbittorrent:
     image: lscr.io/linuxserver/qbittorrent:latest
     container_name: qbittorrent
+    healthcheck:
+      test: curl -f http://localhost:8112/ || exit 1
     restart: always
     network_mode: host
     # ports:

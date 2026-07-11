@@ -4,6 +4,8 @@ services:
   planka:
     image: ghcr.io/plankanban/planka:latest
     container_name: planka
+    healthcheck:
+      test: curl -f http://localhost:1337/ || exit 1
     restart: always
     ports:
       - 3002:1337
@@ -22,6 +24,8 @@ services:
 
   planka_db:
     image: postgres:14-alpine
+    healthcheck:
+      test: pg_isready -U postgres -d planka || exit 1
     restart: always
     container_name: planka_db
     environment:

@@ -4,6 +4,8 @@ services:
   transmission:
     image: haugene/transmission-openvpn
     container_name: transmission
+    healthcheck:
+      test: curl -f http://localhost:9091/ || exit 1
     restart: always
     cap_add:
       - NET_ADMIN

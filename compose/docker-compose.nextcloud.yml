@@ -4,6 +4,8 @@ services:
   nextcloud:
     image: nextcloud:32
     container_name: nextcloud
+    healthcheck:
+      test: curl -f http://localhost:80/status.php || exit 1
     restart: always
     user: ${TESSERACT_UID}:${TESSERACT_GID}
     depends_on:
@@ -45,6 +47,8 @@ services:
   nextcloud_db:
     image: ghcr.io/linuxserver/mariadb
     container_name: nextcloud_db
+    healthcheck:
+      test: mysqladmin ping -h 127.0.0.1 --silent || exit 1
     restart: always
     environment:
       PUID: ${TESSERACT_UID}
@@ -60,11 +64,15 @@ services:
   nextcloud_broker:
     image: redis:alpine
     container_name: nextcloud_broker
+    healthcheck:
+      test: redis-cli ping || exit 1
     restart: always
 
   nextcloud_code:
     image: collabora/code:latest
     container_name: nextcloud_code
+    healthcheck:
+      test: curl -f http://localhost:9980/hosting/discovery || exit 1
     restart: always
     ports:
       - 9980:9980

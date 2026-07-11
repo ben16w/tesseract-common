@@ -4,6 +4,8 @@ services:
   seerr:
     image: ghcr.io/seerr-team/seerr:latest
     container_name: seerr
+    healthcheck:
+      test: curl -f http://localhost:5055/ || exit 1
     restart: always
     init: true
     ports:

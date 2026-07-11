@@ -4,6 +4,8 @@ services:
   wizarr:
     image: ghcr.io/wizarrrr/wizarr
     container_name: wizarr
+    healthcheck:
+      test: curl -f http://localhost:5690/ || exit 1
     restart: always
     user: "${TESSERACT_UID}:${TESSERACT_GID}"
     ports:

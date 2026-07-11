@@ -4,6 +4,8 @@ services:
   searx:
     image: searxng/searxng:latest
     container_name: searx
+    healthcheck:
+      test: curl -f http://localhost:8080/ || exit 1
     restart: always
     ports:
       - 8080:8080

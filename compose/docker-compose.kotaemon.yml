@@ -4,6 +4,8 @@ services:
   kotaemon:
     image: ghcr.io/cinnamon/kotaemon:latest
     container_name: kotaemon
+    healthcheck:
+      test: curl -f http://localhost:7860/ || exit 1
     restart: always
     ports:
       - 7860:7860

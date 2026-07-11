@@ -4,6 +4,8 @@ services:
   homer:
     image: b4bz/homer
     container_name: homer
+    healthcheck:
+      test: wget -qO /dev/null http://localhost:8080/ || exit 1
     restart: always
     ports:
       - 8080:8080

@@ -4,6 +4,8 @@ services:
   coder:
     image: ghcr.io/coder/coder:latest
     container_name: coder
+    healthcheck:
+      test: curl -f http://localhost:7080/ || exit 1
     restart: always
     ports:
       - "7080:7080"

@@ -4,6 +4,8 @@ services:
   jellyfin-vue:
     image: jellyfin/jellyfin-vue:unstable
     container_name: jellyfin-vue
+    healthcheck:
+      test: curl -f http://localhost:80/ || exit 1
     restart: always
     ports:
       - 8084:80

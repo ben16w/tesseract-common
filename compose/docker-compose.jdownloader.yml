@@ -4,6 +4,8 @@ services:
   jdownloader:
     image: jlesage/jdownloader-2
     container_name: jdownloader
+    healthcheck:
+      test: curl -f http://localhost:5800/ || exit 1
     restart: always
     #user: 1001:100
     ports:

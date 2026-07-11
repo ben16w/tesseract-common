@@ -4,6 +4,8 @@ services:
   mealie:
     image: ghcr.io/mealie-recipes/mealie:latest
     container_name: mealie
+    healthcheck:
+      test: curl -f http://localhost:9000/ || exit 1
     restart: always
     ports:
       - 9925:9000

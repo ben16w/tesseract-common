@@ -5,6 +5,8 @@ services:
     # should use codercom/code-server:latest
     image: lscr.io/linuxserver/code-server:latest
     container_name: code-server
+    healthcheck:
+      test: curl -fk https://localhost:8443/ || exit 1
     restart: always
     ports:
       - 8443:8443

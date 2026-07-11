@@ -4,6 +4,8 @@ services:
   openterminal:
     image: ghcr.io/open-webui/open-terminal:latest
     container_name: openterminal
+    healthcheck:
+      test: curl -f http://localhost:8000/ || exit 1
     restart: always
     ports:
       - "8001:8000"

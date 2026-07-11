@@ -4,6 +4,8 @@ services:
   audioserve:
     image: ben16w/audioserve:latest
     container_name: audioserve
+    healthcheck:
+      test: curl -f http://localhost:3000/ || exit 1
     restart: always
     #user: "${TESSERACT_UID}:${TESSERACT_GID}"
     ports:

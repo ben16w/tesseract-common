@@ -4,6 +4,8 @@ services:
   bookstack:
     image: lscr.io/linuxserver/bookstack:latest
     container_name: bookstack
+    healthcheck:
+      test: curl -f http://localhost:80/ || exit 1
     restart: always
     ports:
       - 6875:80
@@ -26,6 +28,8 @@ services:
   bookstack_db:
     image: lscr.io/linuxserver/mariadb
     container_name: bookstack_db
+    healthcheck:
+      test: mysqladmin ping -h 127.0.0.1 --silent || exit 1
     restart: always
     environment:
       PUID: ${TESSERACT_UID}

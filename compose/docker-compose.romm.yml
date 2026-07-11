@@ -4,6 +4,8 @@ services:
   romm:
     image: rommapp/romm:latest
     container_name: romm
+    healthcheck:
+      test: curl -f http://localhost:8080/ || exit 1
     restart: always
     ports:
       - 8098:8080
@@ -30,6 +32,8 @@ services:
   romm_db:
     image: mariadb:latest
     container_name: romm_db
+    healthcheck:
+      test: mysqladmin ping -h 127.0.0.1 --silent || exit 1
     restart: always
     environment:
       MYSQL_ROOT_PASSWORD: "${TESSERACT_SQL_PASSWORD}"

@@ -4,6 +4,8 @@ services:
   homeassistant:
     image: ghcr.io/home-assistant/home-assistant:stable
     container_name: homeassistant
+    healthcheck:
+      test: curl -f http://localhost:8123/ || exit 1
     restart: always
     network_mode: host
     devices:

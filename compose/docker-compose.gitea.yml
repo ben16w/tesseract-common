@@ -6,6 +6,8 @@ services:
     container_name: gitea
     depends_on:
       - gitea_db
+    healthcheck:
+      test: curl -f http://localhost:3000/ || exit 1
     restart: always
     user: "${TESSERACT_UID}:${TESSERACT_GID}"
     ports:
@@ -53,6 +55,8 @@ services:
   gitea_db:
     image: ghcr.io/linuxserver/mariadb
     container_name: gitea_db
+    healthcheck:
+      test: mysqladmin ping -h 127.0.0.1 --silent || exit 1
     restart: always
     environment:
       PUID: "${TESSERACT_UID}"

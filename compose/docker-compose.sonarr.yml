@@ -4,6 +4,8 @@ services:
   sonarr:
     image: lscr.io/linuxserver/sonarr:latest
     container_name: sonarr
+    healthcheck:
+      test: curl -f http://localhost:8989/ || exit 1
     restart: always
     ports:
       - 8989:8989

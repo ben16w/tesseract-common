@@ -4,6 +4,8 @@ services:
   audiobookshelf:
     container_name: audiobookshelf
     image: ghcr.io/advplyr/audiobookshelf:latest
+    healthcheck:
+      test: curl -f http://localhost:80/ || exit 1
     restart: always
     environment:
       AUDIOBOOKSHELF_UID: ${TESSERACT_UID}

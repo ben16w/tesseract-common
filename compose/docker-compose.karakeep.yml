@@ -4,6 +4,8 @@ services:
   karakeep:
     image: ghcr.io/karakeep-app/karakeep:${KARAKEEP_VERSION:-release}
     container_name: karakeep
+    healthcheck:
+      test: curl -f http://localhost:3000/ || exit 1
     restart: always
     ports:
       - 3000:3000
@@ -31,6 +33,8 @@ services:
   karakeep-meilisearch:
     image: getmeili/meilisearch:v1.6
     container_name: karakeep-meilisearch
+    healthcheck:
+      test: wget -qO /dev/null http://localhost:7700/health || exit 1
     restart: always
     environment:
       MEILI_NO_ANALYTICS: "true"

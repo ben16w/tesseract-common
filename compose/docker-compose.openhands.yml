@@ -4,6 +4,8 @@ services:
   openhands:
     image: docker.openhands.dev/openhands/openhands:1.6
     container_name: openhands
+    healthcheck:
+      test: curl -f http://localhost:3000/ || exit 1
     restart: always
     tty: "true"
     stdin_open: "true"

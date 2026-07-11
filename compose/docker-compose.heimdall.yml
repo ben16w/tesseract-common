@@ -4,6 +4,8 @@ services:
   heimdall:
     image: ghcr.io/linuxserver/heimdall
     container_name: heimdall
+    healthcheck:
+      test: curl -f http://localhost:80/ || exit 1
     restart: always
     #ports:
       #- "80:8080"

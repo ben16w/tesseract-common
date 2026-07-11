@@ -4,6 +4,8 @@ services:
   paperless:
     image: ghcr.io/paperless-ngx/paperless-ngx:latest
     container_name: paperless
+    healthcheck:
+      test: curl -f http://localhost:8000/ || exit 1
     restart: always
     depends_on:
       - paperless_db
@@ -40,6 +42,8 @@ services:
   paperless_db:
     image: docker.io/library/postgres:13
     container_name: paperless_db
+    healthcheck:
+      test: pg_isready -U paperless_user -d paperless_database || exit 1
     restart: always
     environment:
       POSTGRES_DB: paperless_database
@@ -51,6 +55,8 @@ services:
   paperless_broker:
     image: docker.io/library/redis:7
     container_name: paperless_broker
+    healthcheck:
+      test: redis-cli ping || exit 1
     restart: always
     volumes:
       - "${TESSERACT_APPDATA_PATH}/paperless_redis:/data"
@@ -58,6 +64,8 @@ services:
   paperless_gotenberg:
     image: docker.io/gotenberg/gotenberg:7.4
     container_name: paperless_gotenberg
+    healthcheck:
+      test: curl -f http://localhost:3000/health || exit 1
     restart: always
     command:
       - "gotenberg"
@@ -66,4 +74,6 @@ services:
   paperless_tika:
     image: ghcr.io/paperless-ngx/tika:latest
     container_name: paperless_tika
+    healthcheck:
+      test: curl -f http://localhost:9998/ || exit 1
     restart: always

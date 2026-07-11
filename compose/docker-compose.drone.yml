@@ -4,6 +4,8 @@ services:
   drone:
     image: drone/drone:latest
     container_name: drone
+    healthcheck:
+      test: curl -f http://localhost:80/ || exit 1
     restart: always
     ports:
       - 8005:80

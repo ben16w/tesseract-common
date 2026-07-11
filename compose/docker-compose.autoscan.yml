@@ -4,6 +4,8 @@ services:
   autoscan:
     image: cloudb0x/autoscan:latest
     container_name: autoscan
+    healthcheck:
+      test: curl -f http://localhost:3030/ || exit 1
     restart: always
     ports:
       - 3030:3030

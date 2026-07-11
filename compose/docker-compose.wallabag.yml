@@ -4,6 +4,8 @@ services:
   wallabag:
     image: wallabag/wallabag
     container_name: wallabag
+    healthcheck:
+      test: curl -f http://localhost:80/ || exit 1
     restart: always
     ports:
       - 8076:80

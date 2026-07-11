@@ -3,6 +3,8 @@ services:
     image: codeberg.org/forgejo/forgejo:15-rootless
     container_name: forgejo
     user: "${TESSERACT_UID}:${TESSERACT_GID}"
+    healthcheck:
+      test: curl -f http://localhost:3000/ || exit 1
     restart: always
     ports:
       - '3007:3000'

@@ -7,6 +7,8 @@ services:
   vaultwarden:
     image: vaultwarden/server:latest
     container_name: vaultwarden
+    healthcheck:
+      test: curl -f http://localhost:8087/ || exit 1
     restart: always
     user: ${TESSERACT_UID}:${TESSERACT_GID}
     ports:

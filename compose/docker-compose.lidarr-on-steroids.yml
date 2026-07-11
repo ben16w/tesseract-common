@@ -4,6 +4,8 @@ services:
   lidarr:
     image: youegraillot/lidarr-on-steroids
     container_name: lidarr
+    healthcheck:
+      test: curl -f http://localhost:8686/ || exit 1
     restart: always
     ports:
       - "8686:8686" # Lidarr web UI

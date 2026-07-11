@@ -4,6 +4,8 @@ services:
   youtubedl:
     image: tzahi12345/youtubedl-material:latest
     container_name: youtubedl
+    healthcheck:
+      test: curl -f http://localhost:17442/ || exit 1
     restart: always
     depends_on:
       - youtubedl-db
@@ -24,6 +26,8 @@ services:
   youtubedl-db:
     image: mongo
     container_name: youtubedl-db
+    healthcheck:
+      test: mongosh --eval "db.adminCommand('ping')" --quiet || exit 1
     restart: always
     ports:
       - 27017:27017

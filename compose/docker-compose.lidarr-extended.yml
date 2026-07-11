@@ -7,6 +7,8 @@ services:
   lidarr:
     image: randomninjaatk/lidarr-extended:latest
     container_name: lidarr
+    healthcheck:
+      test: curl -f http://localhost:8686/ || exit 1
     restart: always
     ports:
       - 8686:8686

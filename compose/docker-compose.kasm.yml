@@ -5,6 +5,8 @@ services:
     image: lscr.io/linuxserver/kasm:latest
     container_name: kasm
     privileged: true
+    healthcheck:
+      test: curl -fk https://localhost:3000/ || exit 1
     restart: always
     ports:
       - 3000:3000 # Port is https!

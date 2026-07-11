@@ -4,6 +4,8 @@ services:
   sillytavern:
     image: ghcr.io/sillytavern/sillytavern:latest
     container_name: sillytavern
+    healthcheck:
+      test: curl -f http://localhost:8000/ || exit 1
     restart: always
     ports:
       - "8000:8000"

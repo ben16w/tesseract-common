@@ -4,6 +4,8 @@ services:
   tandoor:
     image: vabene1111/recipes:latest
     container_name: tandoor
+    healthcheck:
+      test: curl -f http://localhost:8080/ || exit 1
     restart: always
     depends_on:
       - tandoor_db
@@ -31,6 +33,8 @@ services:
   tandoor_db:
     image: postgres:11-alpine
     container_name: tandoor_db
+    healthcheck:
+      test: pg_isready -U tandoor_user -d tandoor_database || exit 1
     restart: always
     environment:
       POSTGRES_PORT: 5432

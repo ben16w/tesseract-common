@@ -5,6 +5,8 @@ services:
     image: lscr.io/linuxserver/steamos:latest
     container_name: steamos
     hostname: steamos
+    healthcheck:
+      test: curl -f http://localhost:3000/ || exit 1
     restart: always
     ports:
       - 3000:3000

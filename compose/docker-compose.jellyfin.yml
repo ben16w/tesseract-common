@@ -4,6 +4,8 @@ services:
   jellyfin:
     image: ghcr.io/linuxserver/jellyfin:10.11.0
     container_name: jellyfin
+    healthcheck:
+      test: curl -f http://localhost:8096/health || exit 1
     restart: always
     ports:
       - 8096:8096 # UI
