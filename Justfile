@@ -153,11 +153,11 @@ lint-ansible: _venv
     #!/usr/bin/env bash
     set -euo pipefail
     echo -e "{{info}} Linting Ansible files..."
-    if [[ -f "ansible.cfg" || -d "roles" || -d "playbooks" || -d "group_vars" || -d "host_vars" ]]; then
+    if [[ -d "roles" || -d "playbooks" || -d "group_vars" || -d "host_vars" ]]; then
         PATH="$(realpath "{{venv}}")/bin:${PATH}" \
         ANSIBLE_ASK_VAULT_PASS=false \
         {{venv}}/bin/ansible-lint \
-            --exclude "ansible_collections/" "playbooks/" "docker-compose.*.yml" "vars.yml" \
+            --exclude "ansible_collections/" "playbooks/" "docker-compose.*.yml" "vars.yml" "molecule/" \
             -x var-naming[no-role-prefix] \
             -x galaxy[no-changelog] \
             --offline -q
