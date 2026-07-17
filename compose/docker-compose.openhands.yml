@@ -9,3 +9,4 @@ services:
       - "3000:8000"
     volumes:
       - "${TESSERACT_APPDATA_PATH}/openhands_data:/home/openhands/.openhands"
+      - /var/run/docker.sock:/var/run/docker.sock
