@@ -256,7 +256,7 @@ test role="" scenario="default": _venv _docker _docker-access
     else
         echo -e "{{info}} Testing repo root (scenario={{scenario}})"
     fi
-    just molecule "test" "{{role}}" --scenario "{{scenario}}"
+    just molecule "test" "{{role}}" -s "{{scenario}}" -n "molecule-${RANDOM}"
     echo -e "{{ok}} Test passed."
 
 # Test roles modified since origin/main
@@ -280,7 +280,7 @@ test-changed scenario="default": _venv _docker _docker-access (_require "roles")
         moleculedir="${roledir}/molecule"
         if [ -f "${moleculedir}/{{scenario}}/molecule.yml" ]; then
             echo -e "{{info}} Testing: ${moleculedir}"
-            INSTANCE_NAME="molecule-${RANDOM}" just molecule "test" "${role}" --scenario "{{scenario}}"
+            just molecule "test" "${role}" -s "{{scenario}}" -n "molecule-${RANDOM}"
             echo -e "{{ok}} ${moleculedir} passed."
         else
             echo -e "{{skip}} ${moleculedir}: no molecule.yml, skipping."
@@ -306,12 +306,12 @@ test-all distros="" scenario="default": _venv _docker _docker-access (_require "
         fi
         if [ -z "${distro_list}" ]; then
             echo -e "{{info}} Testing: ${moleculedir}"
-            INSTANCE_NAME="molecule-${RANDOM}" just molecule "test" "${role}" --scenario "{{scenario}}"
+            just molecule "test" "${role}" -s "{{scenario}}" -n "molecule-${RANDOM}"
             echo -e "{{ok}} ${moleculedir} passed."
         else
             for distro in ${distro_list}; do
                 echo -e "{{info}} Testing: ${moleculedir} on ${distro}"
-                INSTANCE_NAME="molecule-${RANDOM}" MOLECULE_DISTRO="${distro}" just molecule "test" "${role}" --scenario "{{scenario}}"
+                MOLECULE_DISTRO="${distro}" just molecule "test" "${role}" -s "{{scenario}}" -n "molecule-${RANDOM}"
                 echo -e "{{ok}} ${moleculedir} [${distro}] passed."
             done
         fi
@@ -325,7 +325,8 @@ test-all distros="" scenario="default": _venv _docker _docker-access (_require "
 [group('molecule')]
 [arg("scenario", long, short="s")]
 [arg("destroy", long, short="d")]
-molecule cmd="test" role="" scenario="default" destroy="true": _venv _docker _docker-access
+[arg("instance-name", long, short="n")]
+molecule cmd="test" role="" scenario="default" destroy="true" instance-name="": _venv _docker _docker-access
     #!/usr/bin/env bash
     set -euo pipefail
     if [ "{{role}}" == "" ]; then
@@ -348,7 +349,11 @@ molecule cmd="test" role="" scenario="default" destroy="true": _venv _docker _do
     VENV_DIR="$(realpath "{{venv}}")"
     (
         cd "$(dirname "${moleculedir}")"
-        PATH="${VENV_DIR}/bin:${PATH}" VIRTUAL_ENV="${VENV_DIR}" "${VENV_DIR}/bin/molecule" "{{cmd}}" "${args[@]}"
+        if [ -n "{{instance-name}}" ]; then
+            INSTANCE_NAME="{{instance-name}}" PATH="${VENV_DIR}/bin:${PATH}" VIRTUAL_ENV="${VENV_DIR}" "${VENV_DIR}/bin/molecule" "{{cmd}}" "${args[@]}"
+        else
+            PATH="${VENV_DIR}/bin:${PATH}" VIRTUAL_ENV="${VENV_DIR}" "${VENV_DIR}/bin/molecule" "{{cmd}}" "${args[@]}"
+        fi
     )
 
 # ── deploy ─────────────────────────────────────────────────────────────────────
