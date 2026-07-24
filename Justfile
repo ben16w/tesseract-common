@@ -198,7 +198,7 @@ install-venv: _non-root _python3
         exit 0
     fi
     test -d "{{venv}}" || python3 -m venv "{{venv}}"
-    "{{venv}}"/bin/python -m pip install -q --upgrade pip
+    "{{venv}}"/bin/python3 -m pip install -q --upgrade pip
     "{{venv}}"/bin/pip install -q --upgrade -r requirements.txt
     echo -e "{{ok}} Virtual environment ready."
 
