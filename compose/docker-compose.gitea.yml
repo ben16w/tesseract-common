@@ -62,5 +62,6 @@ services:
       MYSQL_USER: "gitea_user"
       MYSQL_PASSWORD: "${TESSERACT_SQL_PASSWORD}"
       MYSQL_DATABASE: "gitea_database"
+      MYSQL_EXTRA_FLAGS: "--expire-logs-days=7"
     volumes:
       - ${TESSERACT_APPDATA_PATH}/gitea_db:/config

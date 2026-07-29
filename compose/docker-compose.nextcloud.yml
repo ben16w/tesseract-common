@@ -38,9 +38,7 @@ services:
       - "${TESSERACT_APPDATA_PATH}/nextcloud_config:/var/www/html"
       - "${TESSERACT_APPDATA_PATH}/nextcloud_redis/redis-session.ini:/usr/local/etc/php/conf.d/redis-session.ini"
 
-      - "${TESSERACT_APPDATA_PATH}/nextcloud_data:/data"
-      - "${TESSERACT_DATA_PATH}/Nextcloud/ben:/data/ben" # Ugly workaround
-      - "${TESSERACT_DATA_PATH}/Nextcloud/ivan:/data/ivan" # Ugly workaround
+      - "${TESSERACT_DATA_PATH}/Nextcloud:/data"
 
   nextcloud_db:
     image: ghcr.io/linuxserver/mariadb
@@ -54,6 +52,7 @@ services:
       MYSQL_USER: nextcloud_user
       MYSQL_PASSWORD: "${TESSERACT_SQL_PASSWORD}"
       MYSQL_DATABASE: nextcloud_database
+      MYSQL_EXTRA_FLAGS: "--expire-logs-days=7"
     volumes:
       - ${TESSERACT_APPDATA_PATH}/nextcloud_db:/config
 
@@ -62,19 +61,12 @@ services:
     container_name: nextcloud_broker
     restart: always
 
-  nextcloud_code:
-    image: collabora/code:latest
-    container_name: nextcloud_code
+  nextcloud_office:
+    image: ghcr.io/euro-office/documentserver:latest
+    container_name: nextcloud_office
     restart: always
     ports:
-      - 9980:9980
-    cap_add:
-      - MKNOD
+      - 9980:80
     environment:
-      domain: "docs.${TESSERACT_DOMAIN}"
-      extra_params: "--o:ssl.enable=false --o:ssl.termination=true --o:welcome.enable=false"
-      username: "${TESSERACT_DOCKER_USERNAME}"
-      password: "${TESSERACT_DOCKER_PASSWORD}"
-      dictionaries: "en_GB fr_FR"
-    volumes:
-      - "${TESSERACT_APPDATA_PATH}/nextcloud_code:/usr/share/coolwsd/browser/dist/welcome:ro" # Remove nag screen
+      JWT_ENABLED: "true"
+      JWT_SECRET: "${TESSERACT_NEXTCLOUD_OFFICE_JWT_SECRET}"
