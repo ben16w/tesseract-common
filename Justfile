@@ -85,6 +85,7 @@ _python3:
 # ── help ───────────────────────────────────────────────────────────────────────
 
 # List available recipes
+[default]
 help:
     @just --list
 
