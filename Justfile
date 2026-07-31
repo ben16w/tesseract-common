@@ -261,7 +261,7 @@ test role="" scenario="default" distro="": _venv _docker _docker-access
     else
         echo -e "{{info}} Testing repo root (scenario={{scenario}})${distro:+ on ${distro}}"
     fi
-    just molecule "test" "{{role}}" -s "{{scenario}}" -n "molecule-${RANDOM}" -d
+    just molecule "{{role}}" -s "{{scenario}}" -n "molecule-${RANDOM}" -d
     echo -e "{{ok}} Test passed${distro:+ [${distro}]}."
 
 # Test roles modified since origin/main
@@ -290,7 +290,7 @@ test-changed scenario="default" distro="": _venv _docker _docker-access (_requir
         moleculedir="${roledir}/molecule"
         if [ -f "${moleculedir}/{{scenario}}/molecule.yml" ]; then
             echo -e "{{info}} Testing: ${moleculedir}${distro:+ on ${distro}}"
-            just molecule "test" "${role}" -s "{{scenario}}" -n "molecule-${RANDOM}" -d
+            just molecule "${role}" -s "{{scenario}}" -n "molecule-${RANDOM}" -d
             echo -e "{{ok}} ${moleculedir} passed${distro:+ [${distro}]}."
         else
             echo -e "{{skip}} ${moleculedir}: no molecule.yml, skipping."
@@ -317,7 +317,7 @@ test-all distro="" scenario="default": _venv _docker _docker-access (_require "r
             continue
         fi
         echo -e "{{info}} Testing: ${moleculedir}${distro:+ on ${distro}}"
-        just molecule "test" "${role}" -s "{{scenario}}" -n "molecule-${RANDOM}" -d
+        just molecule "${role}" -s "{{scenario}}" -n "molecule-${RANDOM}" -d
         echo -e "{{ok}} ${moleculedir} passed${distro:+ [${distro}]}."
     done
     echo -e "{{ok}} All roles passed."
@@ -327,10 +327,11 @@ test-all distro="" scenario="default": _venv _docker _docker-access (_require "r
 # Run a molecule command for a role
 [no-exit-message]
 [group('molecule')]
+[arg("cmd", long, short="c")]
 [arg("scenario", long, short="s")]
 [arg("destroy", long, short="d", value="true")]
 [arg("instance-name", long, short="n")]
-molecule cmd="test" role="" scenario="default" destroy="false" instance-name="": _venv _docker _docker-access
+molecule role="" cmd="test" scenario="default" destroy="false" instance-name="": _venv _docker _docker-access
     #!/usr/bin/env bash
     set -euo pipefail
     if [ "{{role}}" == "" ]; then
