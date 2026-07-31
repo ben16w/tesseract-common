@@ -252,13 +252,16 @@ update-molecule: _non-root (_require "molecule.yml") (_require "roles")
 test role="" scenario="default" distro="": _venv _docker _docker-access
     #!/usr/bin/env bash
     set -euo pipefail
+    if [ -n "{{distro}}" ]; then
+        export MOLECULE_DISTRO="{{distro}}"
+    fi
     distro="{{distro}}"
     if [ -n "{{role}}" ]; then
         echo -e "{{info}} Testing role: {{role}} (scenario={{scenario}})${distro:+ on ${distro}}"
     else
         echo -e "{{info}} Testing repo root (scenario={{scenario}})${distro:+ on ${distro}}"
     fi
-    env ${distro:+MOLECULE_DISTRO=${distro}} just molecule "test" "{{role}}" -s "{{scenario}}" -n "molecule-${RANDOM}"
+    just molecule "test" "{{role}}" -s "{{scenario}}" -n "molecule-${RANDOM}" -d
     echo -e "{{ok}} Test passed${distro:+ [${distro}]}."
 
 # Test roles modified since origin/main
@@ -269,6 +272,9 @@ test-changed scenario="default" distro="": _venv _docker _docker-access (_requir
     #!/usr/bin/env bash
     set -euo pipefail
     echo -e "{{info}} Testing changed roles since origin/main (scenario={{scenario}})"
+    if [ -n "{{distro}}" ]; then
+        export MOLECULE_DISTRO="{{distro}}"
+    fi
     distro="{{distro}}"
     if ! git fetch origin main 2>/dev/null; then
         echo -e "{{skip}} Could not fetch origin/main, using local ref."
@@ -284,7 +290,7 @@ test-changed scenario="default" distro="": _venv _docker _docker-access (_requir
         moleculedir="${roledir}/molecule"
         if [ -f "${moleculedir}/{{scenario}}/molecule.yml" ]; then
             echo -e "{{info}} Testing: ${moleculedir}${distro:+ on ${distro}}"
-            env ${distro:+MOLECULE_DISTRO=${distro}} just molecule "test" "${role}" -s "{{scenario}}" -n "molecule-${RANDOM}"
+            just molecule "test" "${role}" -s "{{scenario}}" -n "molecule-${RANDOM}" -d
             echo -e "{{ok}} ${moleculedir} passed${distro:+ [${distro}]}."
         else
             echo -e "{{skip}} ${moleculedir}: no molecule.yml, skipping."
@@ -300,6 +306,9 @@ test-all distro="" scenario="default": _venv _docker _docker-access (_require "r
     #!/usr/bin/env bash
     set -euo pipefail
     echo -e "{{info}} Testing all roles (scenario={{scenario}})"
+    if [ -n "{{distro}}" ]; then
+        export MOLECULE_DISTRO="{{distro}}"
+    fi
     distro="{{distro}}"
     for moleculedir in roles/*/molecule; do
         role=$(basename "$(dirname "${moleculedir}")")
@@ -308,7 +317,7 @@ test-all distro="" scenario="default": _venv _docker _docker-access (_require "r
             continue
         fi
         echo -e "{{info}} Testing: ${moleculedir}${distro:+ on ${distro}}"
-        env ${distro:+MOLECULE_DISTRO=${distro}} just molecule "test" "${role}" -s "{{scenario}}" -n "molecule-${RANDOM}"
+        just molecule "test" "${role}" -s "{{scenario}}" -n "molecule-${RANDOM}" -d
         echo -e "{{ok}} ${moleculedir} passed${distro:+ [${distro}]}."
     done
     echo -e "{{ok}} All roles passed."
@@ -319,9 +328,9 @@ test-all distro="" scenario="default": _venv _docker _docker-access (_require "r
 [no-exit-message]
 [group('molecule')]
 [arg("scenario", long, short="s")]
-[arg("destroy", long, short="d")]
+[arg("destroy", long, short="d", value="true")]
 [arg("instance-name", long, short="n")]
-molecule cmd="test" role="" scenario="default" destroy="true" instance-name="": _venv _docker _docker-access
+molecule cmd="test" role="" scenario="default" destroy="false" instance-name="": _venv _docker _docker-access
     #!/usr/bin/env bash
     set -euo pipefail
     if [ "{{role}}" == "" ]; then
@@ -357,20 +366,30 @@ molecule cmd="test" role="" scenario="default" destroy="true" instance-name="": 
 [group('deploy')]
 [arg("limit", long, short="l")]
 [arg("tags", long, short="t")]
-deploy env="prod" limit="all" tags="all": _venv (_require "inventories/" + env + "/hosts.yml") (_require "playbooks/" + env + ".yml")
+[arg("verbose", long, short="v", value="true")]
+deploy env="prod" limit="all" tags="all" verbose="false": _venv (_require "inventories/" + env + "/hosts.yml") (_require "playbooks/" + env + ".yml")
     #!/usr/bin/env bash
     set -euo pipefail
     echo -e "{{info}} Deploying playbook for environment: {{env}} (tags={{tags}}, limit={{limit}})"
+    if [ "{{verbose}}" != "true" ]; then
+        export ANSIBLE_DISPLAY_SKIPPED_HOSTS=false
+        export ANSIBLE_DISPLAY_OK_HOSTS=false
+    fi
     {{venv}}/bin/ansible-playbook -i inventories/{{env}}/hosts.yml playbooks/{{env}}.yml --tags {{tags}} --limit {{limit}}
     echo -e "{{ok}} Playbook deployed."
 
 # Deploy a role from a local path directly against hosts
 [group('deploy')]
 [arg("limit", long, short="l")]
-deploy-role path env="prod" limit="all": _venv (_require path) (_require path + "/tasks/main.yml") (_require "inventories/" + env + "/hosts.yml")
+[arg("verbose", long, short="v", value="true")]
+deploy-role path env="prod" limit="all" verbose="false": _venv (_require path) (_require path + "/tasks/main.yml") (_require "inventories/" + env + "/hosts.yml")
     #!/usr/bin/env bash
     set -euo pipefail
     echo -e "{{info}} Deploying role: {{path}} on environment: {{env}} (limit={{limit}})"
+    if [ "{{verbose}}" != "true" ]; then
+        export ANSIBLE_DISPLAY_SKIPPED_HOSTS=false
+        export ANSIBLE_DISPLAY_OK_HOSTS=false
+    fi
     role_path=$(realpath "{{path}}")
     role_name=$(basename "${role_path}")
     roles_dir=$(dirname "${role_path}")
@@ -388,12 +407,16 @@ deploy-role path env="prod" limit="all": _venv (_require path) (_require path + 
 [group('deploy')]
 [arg("limit", long, short="l")]
 [arg("tags", long, short="t")]
-check env="prod" limit="all" tags="all": _venv (_require "inventories/" + env + "/hosts.yml") (_require "playbooks/" + env + ".yml")
+[arg("verbose", long, short="v", value="true")]
+check env="prod" limit="all" tags="all" verbose="false": _venv (_require "inventories/" + env + "/hosts.yml") (_require "playbooks/" + env + ".yml")
     #!/usr/bin/env bash
     set -euo pipefail
     echo -e "{{info}} Dry-run playbook for environment: {{env}} (tags={{tags}}, limit={{limit}})"
-    ANSIBLE_DISPLAY_SKIPPED_HOSTS=false ANSIBLE_DISPLAY_OK_HOSTS=false \
-        {{venv}}/bin/ansible-playbook -i inventories/{{env}}/hosts.yml playbooks/{{env}}.yml --tags {{tags}} --limit {{limit}} --diff --check
+    if [ "{{verbose}}" != "true" ]; then
+        export ANSIBLE_DISPLAY_SKIPPED_HOSTS=false
+        export ANSIBLE_DISPLAY_OK_HOSTS=false
+    fi
+    {{venv}}/bin/ansible-playbook -i inventories/{{env}}/hosts.yml playbooks/{{env}}.yml --tags {{tags}} --limit {{limit}} --diff --check
     echo -e "{{ok}} Dry-run complete."
 
 # ── ops ────────────────────────────────────────────────────────────────────────
