@@ -18,6 +18,13 @@ ok := green + "✔" + reset
 err := red + "✗" + reset
 skip := yellow + "~" + reset
 
+# ── help ───────────────────────────────────────────────────────────────────────
+
+# List available recipes
+[default]
+help:
+    @just --list
+
 # ── helpers ────────────────────────────────────────────────────────────
 
 [no-exit-message]
@@ -81,13 +88,6 @@ _python3:
         echo -e "{{err}} python3-venv is not installed. Install it with: apt install python3-venv" >&2
         exit 1
     fi
-
-# ── help ───────────────────────────────────────────────────────────────────────
-
-# List available recipes
-[default]
-help:
-    @just --list
 
 # ── lint ───────────────────────────────────────────────────────────────────────
 
