@@ -248,24 +248,28 @@ update-molecule: _non-root (_require "molecule.yml") (_require "roles")
 # Run molecule test for a role (omit role to test repo root)
 [group('test')]
 [arg("scenario", long, short="s")]
-test role="" scenario="default": _venv _docker _docker-access
+[arg("distro", long, short="d")]
+test role="" scenario="default" distro="": _venv _docker _docker-access
     #!/usr/bin/env bash
     set -euo pipefail
+    distro="{{distro}}"
     if [ -n "{{role}}" ]; then
-        echo -e "{{info}} Testing role: {{role}} (scenario={{scenario}})"
+        echo -e "{{info}} Testing role: {{role}} (scenario={{scenario}})${distro:+ on ${distro}}"
     else
-        echo -e "{{info}} Testing repo root (scenario={{scenario}})"
+        echo -e "{{info}} Testing repo root (scenario={{scenario}})${distro:+ on ${distro}}"
     fi
-    just molecule "test" "{{role}}" -s "{{scenario}}" -n "molecule-${RANDOM}"
-    echo -e "{{ok}} Test passed."
+    env ${distro:+MOLECULE_DISTRO=${distro}} just molecule "test" "{{role}}" -s "{{scenario}}" -n "molecule-${RANDOM}"
+    echo -e "{{ok}} Test passed${distro:+ [${distro}]}."
 
 # Test roles modified since origin/main
 [arg("scenario", long, short="s")]
+[arg("distro", long, short="d")]
 [group('test')]
-test-changed scenario="default": _venv _docker _docker-access (_require "roles")
+test-changed scenario="default" distro="": _venv _docker _docker-access (_require "roles")
     #!/usr/bin/env bash
     set -euo pipefail
     echo -e "{{info}} Testing changed roles since origin/main (scenario={{scenario}})"
+    distro="{{distro}}"
     if ! git fetch origin main 2>/dev/null; then
         echo -e "{{skip}} Could not fetch origin/main, using local ref."
     fi
@@ -279,44 +283,35 @@ test-changed scenario="default": _venv _docker _docker-access (_require "roles")
         role=$(basename "${roledir}")
         moleculedir="${roledir}/molecule"
         if [ -f "${moleculedir}/{{scenario}}/molecule.yml" ]; then
-            echo -e "{{info}} Testing: ${moleculedir}"
-            just molecule "test" "${role}" -s "{{scenario}}" -n "molecule-${RANDOM}"
-            echo -e "{{ok}} ${moleculedir} passed."
+            echo -e "{{info}} Testing: ${moleculedir}${distro:+ on ${distro}}"
+            env ${distro:+MOLECULE_DISTRO=${distro}} just molecule "test" "${role}" -s "{{scenario}}" -n "molecule-${RANDOM}"
+            echo -e "{{ok}} ${moleculedir} passed${distro:+ [${distro}]}."
         else
             echo -e "{{skip}} ${moleculedir}: no molecule.yml, skipping."
         fi
     done
-    echo -e "{{ok}} All changed roles tested."
+    echo -e "{{ok}} All changed roles passed."
 
-# Test every role, optionally across multiple distros
+# Test every role, optionally with a specific distro
 [group('test')]
 [arg("scenario", long, short="s")]
-[arg("distros", long, short="d")]
-test-all distros="" scenario="default": _venv _docker _docker-access (_require "roles")
+[arg("distro", long, short="d")]
+test-all distro="" scenario="default": _venv _docker _docker-access (_require "roles")
     #!/usr/bin/env bash
     set -euo pipefail
     echo -e "{{info}} Testing all roles (scenario={{scenario}})"
-    distro_list="{{distros}}"
-    distro_list="${distro_list//,/ }"
+    distro="{{distro}}"
     for moleculedir in roles/*/molecule; do
         role=$(basename "$(dirname "${moleculedir}")")
         if [ ! -f "${moleculedir}/{{scenario}}/molecule.yml" ]; then
             echo -e "{{skip}} ${moleculedir}: no molecule.yml, skipping."
             continue
         fi
-        if [ -z "${distro_list}" ]; then
-            echo -e "{{info}} Testing: ${moleculedir}"
-            just molecule "test" "${role}" -s "{{scenario}}" -n "molecule-${RANDOM}"
-            echo -e "{{ok}} ${moleculedir} passed."
-        else
-            for distro in ${distro_list}; do
-                echo -e "{{info}} Testing: ${moleculedir} on ${distro}"
-                MOLECULE_DISTRO="${distro}" just molecule "test" "${role}" -s "{{scenario}}" -n "molecule-${RANDOM}"
-                echo -e "{{ok}} ${moleculedir} [${distro}] passed."
-            done
-        fi
+        echo -e "{{info}} Testing: ${moleculedir}${distro:+ on ${distro}}"
+        env ${distro:+MOLECULE_DISTRO=${distro}} just molecule "test" "${role}" -s "{{scenario}}" -n "molecule-${RANDOM}"
+        echo -e "{{ok}} ${moleculedir} passed${distro:+ [${distro}]}."
     done
-    echo -e "{{ok}} All roles tested."
+    echo -e "{{ok}} All roles passed."
 
 # ── molecule ───────────────────────────────────────────────────────────────────
 
