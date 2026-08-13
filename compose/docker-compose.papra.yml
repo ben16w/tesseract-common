@@ -1,0 +1,27 @@
+---
+
+services:
+  papra:
+    image: ghcr.io/papra-hq/papra:latest
+    container_name: papra
+    restart: always
+    user: "${TESSERACT_UID}:${TESSERACT_GID}"
+    ports:
+      - 1221:1221
+    environment:
+      APP_BASE_URL: "https://paper.${TESSERACT_DOMAIN}"
+      AUTH_SECRET: "${TESSERACT_PAPRA_AUTH_SECRET}"
+      AI_IS_ENABLED: true
+      AUTO_TAGGING_ENABLED: true
+      OPENAI_BASE_URL: "https://ai.${TESSERACT_DOMAIN}"
+      OPENAI_API_KEY: notrequired
+      AI_DEFAULT_MODEL: openai://balanced
+      EMAILS_DRIVER: smtp
+      EMAILS_FROM_ADDRESS: "Papra <${TESSERACT_EMAIL_USERNAME}>"
+      SMTP_HOST: "${TESSERACT_EMAIL_HOST}"
+      SMTP_PORT: "${TESSERACT_EMAIL_PORT}"
+      SMTP_USER: "${TESSERACT_EMAIL_USERNAME}"
+      SMTP_PASSWORD: "${TESSERACT_EMAIL_PASSWORD}"
+      SMTP_SECURE: true
+    volumes:
+      - "${TESSERACT_APPDATA_PATH}/papra_data:/app/app-data"
