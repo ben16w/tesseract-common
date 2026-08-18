@@ -11,14 +11,11 @@ services:
       - planka_db
     environment:
       BASE_URL: "https://boards.${TESSERACT_DOMAIN}"
-      TRUST_PROXY: 0
+      TRUST_PROXY: false
       DATABASE_URL: postgresql://postgres@planka_db/planka
       SECRET_KEY: "${TESSERACT_PLANKA_SECRET_KEY}"
-      WEBHOOKS: "[]"
     volumes:
-      - "${TESSERACT_APPDATA_PATH}/planka_avatars:/app/public/user-avatars"
-      - "${TESSERACT_APPDATA_PATH}/planka_images:/app/public/project-background-images"
-      - "${TESSERACT_APPDATA_PATH}/planka_attachments:/app/private/attachments"
+      - "${TESSERACT_APPDATA_PATH}/planka_data:/app/data"
 
   planka_db:
     image: postgres:14-alpine
