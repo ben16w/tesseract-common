@@ -1,0 +1,20 @@
+---
+
+services:
+  qwentts-cpp:
+    build:
+      context: ../dockerfiles/qwentts-cpp
+      args:
+        TALKER: "qwen-talker-1.7b-customvoice-Q8_0.gguf"
+        TOKENIZER: "qwen-tokenizer-12hz-Q8_0.gguf"
+    container_name: qwentts-cpp
+    restart: always
+    ports:
+      - "8880:8080"
+    environment:
+      MODEL_PATH: "/models/qwen-talker-1.7b-customvoice-Q8_0.gguf"
+      CODEC_PATH: "/models/qwen-tokenizer-12hz-Q8_0.gguf"
+      TTS_LANG: "en"
+      TTS_DEFAULT_INSTRUCT: "Speak with a warm British accent."
+    devices:
+      - /dev/dri:/dev/dri
