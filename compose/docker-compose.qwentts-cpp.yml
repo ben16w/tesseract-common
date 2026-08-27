@@ -16,6 +16,7 @@ services:
       CODEC_PATH: "/models/qwen-tokenizer-12hz-Q8_0.gguf"
       TTS_LANG: "English"
       TTS_DEFAULT_INSTRUCT: "Speak with a warm British accent."
-      TTS_IDLE_TIMEOUT_SECONDS: "1"
+      TTS_IDLE_TIMEOUT_SECONDS: "15"
+      TTS_LAZY_LOAD: "true"
     devices:
       - /dev/dri:/dev/dri

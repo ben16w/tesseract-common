@@ -9,6 +9,7 @@ import sys
 import threading
 import time
 from http.server import HTTPServer, BaseHTTPRequestHandler
+from socketserver import ThreadingMixIn
 from urllib.request import Request, urlopen
 from urllib.error import HTTPError, URLError
 
@@ -140,6 +141,10 @@ def _idle_watchdog():
                 _stop_backend()
 
 
+class ThreadedHTTPServer(ThreadingMixIn, HTTPServer):
+    daemon_threads = True
+
+
 if __name__ == "__main__":
     port = int(os.environ.get("PROXY_PORT", "8080"))
     lazy = os.environ.get("TTS_LAZY_LOAD", "true").lower() == "true"
@@ -151,7 +156,7 @@ if __name__ == "__main__":
         threading.Thread(target=_idle_watchdog, daemon=True).start()
         print(f"[proxy] idle timeout: {IDLE_TIMEOUT}s", flush=True)
 
-    server = HTTPServer(("0.0.0.0", port), ProxyHandler)
+    server = ThreadedHTTPServer(("0.0.0.0", port), ProxyHandler)
     print(f"[proxy] listening on 0.0.0.0:{port}, lazy_load={lazy}", flush=True)
 
     def _shutdown(sig, frame):
