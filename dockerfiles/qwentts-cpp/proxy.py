@@ -17,6 +17,7 @@ BACKEND_PORT = int(os.environ.get("TTS_BACKEND_PORT", "8081"))
 BACKEND = f"http://127.0.0.1:{BACKEND_PORT}"
 DEFAULT_INSTRUCT = os.environ.get("TTS_DEFAULT_INSTRUCT", "")
 IDLE_TIMEOUT = int(os.environ.get("TTS_IDLE_TIMEOUT_SECONDS", "0"))
+MAX_NEW_TOKENS = int(os.environ.get("TTS_MAX_NEW_TOKENS", "4096"))
 SUPPORTED_FORMATS = {"pcm", "wav"}
 
 _lock = threading.Lock()
@@ -94,6 +95,8 @@ class ProxyHandler(BaseHTTPRequestHandler):
                 data["response_format"] = "wav"
             if DEFAULT_INSTRUCT and "instruct" not in data:
                 data["instruct"] = DEFAULT_INSTRUCT
+            if "max_new_tokens" not in data:
+                data["max_new_tokens"] = MAX_NEW_TOKENS
             body = json.dumps(data).encode()
 
         self._start_if_needed()
