@@ -36,7 +36,10 @@ def _start_backend():
     print("[proxy] starting tts-server", flush=True)
     env = os.environ.copy()
     env["PORT"] = str(BACKEND_PORT)
-    _process = subprocess.Popen(["./entrypoint.sh"], env=env, cwd="/app")
+    _process = subprocess.Popen(
+        ["./entrypoint.sh"], env=env, cwd="/app",
+        start_new_session=True,
+    )
     for _ in range(120):
         try:
             urlopen(f"{BACKEND}/health", timeout=2)
@@ -57,11 +60,12 @@ def _stop_backend():
     proc = _process
     if proc is None:
         return
-    proc.terminate()
+    pgid = os.getpgid(proc.pid)
+    os.killpg(pgid, signal.SIGTERM)
     try:
         proc.wait(timeout=10)
     except subprocess.TimeoutExpired:
-        proc.kill()
+        os.killpg(pgid, signal.SIGKILL)
         proc.wait()
     _process = None
     print("[proxy] tts-server stopped", flush=True)
