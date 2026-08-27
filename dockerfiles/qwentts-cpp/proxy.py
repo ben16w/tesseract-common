@@ -1,25 +1,84 @@
 #!/usr/bin/env python3
-"""Proxy that sits in front of tts-server, rewriting requests for compatibility."""
+"""Proxy that manages tts-server lifecycle and rewrites requests for compatibility."""
 
 import json
 import os
+import signal
 import subprocess
 import sys
+import threading
 import time
 from http.server import HTTPServer, BaseHTTPRequestHandler
 from urllib.request import Request, urlopen
-from urllib.error import HTTPError
+from urllib.error import HTTPError, URLError
 
-BACKEND = os.environ.get("TTS_BACKEND_URL", "http://127.0.0.1:8081")
+BACKEND_PORT = int(os.environ.get("TTS_BACKEND_PORT", "8081"))
+BACKEND = f"http://127.0.0.1:{BACKEND_PORT}"
 DEFAULT_INSTRUCT = os.environ.get("TTS_DEFAULT_INSTRUCT", "")
+IDLE_TIMEOUT = int(os.environ.get("TTS_IDLE_TIMEOUT_SECONDS", "0"))
 SUPPORTED_FORMATS = {"pcm", "wav"}
+
+_lock = threading.Lock()
+_process = None
+_last_activity = 0.0
+
+
+def _is_running():
+    return _process is not None and _process.poll() is None
+
+
+def _start_backend():
+    global _process, _last_activity
+    if _is_running():
+        return
+    print("[proxy] starting tts-server", flush=True)
+    env = os.environ.copy()
+    env["PORT"] = str(BACKEND_PORT)
+    _process = subprocess.Popen(["./entrypoint.sh"], env=env, cwd="/app")
+    for _ in range(120):
+        try:
+            urlopen(f"{BACKEND}/health", timeout=2)
+            print("[proxy] tts-server ready", flush=True)
+            _last_activity = time.monotonic()
+            return
+        except (URLError, OSError):
+            time.sleep(1)
+    print("[proxy] tts-server failed to start", flush=True)
+
+
+def _stop_backend():
+    global _process
+    if not _is_running():
+        _process = None
+        return
+    print("[proxy] stopping tts-server (idle timeout)", flush=True)
+    proc = _process
+    if proc is None:
+        return
+    proc.terminate()
+    try:
+        proc.wait(timeout=10)
+    except subprocess.TimeoutExpired:
+        proc.kill()
+        proc.wait()
+    _process = None
+    print("[proxy] tts-server stopped", flush=True)
 
 
 class ProxyHandler(BaseHTTPRequestHandler):
     def do_GET(self):
+        if self.path == "/health":
+            status = "ready" if _is_running() else "idle"
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json")
+            self.end_headers()
+            self.wfile.write(json.dumps({"status": status}).encode())
+            return
+        self._start_if_needed()
         self._proxy()
 
     def do_POST(self):
+        global _last_activity
         length = int(self.headers.get("Content-Length", 0))
         body = self.rfile.read(length) if length else b""
 
@@ -31,7 +90,14 @@ class ProxyHandler(BaseHTTPRequestHandler):
                 data["instruct"] = DEFAULT_INSTRUCT
             body = json.dumps(data).encode()
 
+        self._start_if_needed()
+        _last_activity = time.monotonic()
         self._proxy(body)
+
+    def _start_if_needed(self):
+        with _lock:
+            if not _is_running():
+                _start_backend()
 
     def _proxy(self, body=None):
         url = BACKEND + self.path
@@ -63,8 +129,35 @@ class ProxyHandler(BaseHTTPRequestHandler):
         sys.stderr.write(f"[proxy] {fmt % args}\n")
 
 
+def _idle_watchdog():
+    while True:
+        time.sleep(30)
+        if not _is_running():
+            continue
+        idle = time.monotonic() - _last_activity
+        if idle >= IDLE_TIMEOUT:
+            with _lock:
+                _stop_backend()
+
+
 if __name__ == "__main__":
     port = int(os.environ.get("PROXY_PORT", "8080"))
+    lazy = os.environ.get("TTS_LAZY_LOAD", "true").lower() == "true"
+
+    if not lazy:
+        _start_backend()
+
+    if IDLE_TIMEOUT > 0:
+        threading.Thread(target=_idle_watchdog, daemon=True).start()
+        print(f"[proxy] idle timeout: {IDLE_TIMEOUT}s", flush=True)
+
     server = HTTPServer(("0.0.0.0", port), ProxyHandler)
-    print(f"[proxy] listening on 0.0.0.0:{port}, backend={BACKEND}", flush=True)
+    print(f"[proxy] listening on 0.0.0.0:{port}, lazy_load={lazy}", flush=True)
+
+    def _shutdown(sig, frame):
+        _stop_backend()
+        sys.exit(0)
+    signal.signal(signal.SIGTERM, _shutdown)
+    signal.signal(signal.SIGINT, _shutdown)
+
     server.serve_forever()

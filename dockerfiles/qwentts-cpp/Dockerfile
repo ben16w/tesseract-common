@@ -12,7 +12,6 @@ RUN mkdir -p /models && \
     curl -L --progress-bar -o "/models/$TALKER" "$BASE_URL/$TALKER" && \
     curl -L --progress-bar -o "/models/$TOKENIZER" "$BASE_URL/$TOKENIZER"
 
-COPY proxy.py start.sh /app/
-RUN chmod +x /app/start.sh
+COPY proxy.py /app/
 
-ENTRYPOINT ["/app/start.sh"]
+ENTRYPOINT ["python3", "/app/proxy.py"]
