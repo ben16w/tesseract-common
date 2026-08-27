@@ -8,7 +8,8 @@ ARG BASE_URL="https://huggingface.co/Serveurperso/Qwen3-TTS-GGUF/resolve/main"
 ARG TALKER
 ARG TOKENIZER
 
-RUN curl -L --progress-bar -o "/models/$TALKER" "$BASE_URL/$TALKER" && \
+RUN mkdir -p /models && \
+    curl -L --progress-bar -o "/models/$TALKER" "$BASE_URL/$TALKER" && \
     curl -L --progress-bar -o "/models/$TOKENIZER" "$BASE_URL/$TOKENIZER"
 
 COPY proxy.py start.sh /app/
