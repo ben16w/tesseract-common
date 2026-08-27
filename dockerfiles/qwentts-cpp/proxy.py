@@ -35,6 +35,11 @@ FFMPEG_ARGS = {
 }
 
 
+def _log(msg):
+    sys.stderr.write(f"[proxy] {msg}\n")
+    sys.stderr.flush()
+
+
 def _convert_audio(wav_data: bytes, fmt: str) -> bytes:
     """Convert WAV to the requested format using ffmpeg."""
     if fmt in ("wav", "pcm"):
@@ -47,7 +52,9 @@ def _convert_audio(wav_data: bytes, fmt: str) -> bytes:
         input=wav_data, capture_output=True,
     )
     if proc.returncode != 0:
+        _log(f"ffmpeg error: {proc.stderr.decode()[:200]}")
         raise RuntimeError(f"ffmpeg failed: {proc.stderr.decode()[:200]}")
+    _log(f"converted wav ({len(wav_data)} bytes) -> {fmt} ({len(proc.stdout)} bytes)")
     return proc.stdout
 
 _lock = threading.Lock()
@@ -64,7 +71,7 @@ def _start_backend():
     global _process, _last_activity
     if _is_running():
         return
-    print("[proxy] starting tts-server", flush=True)
+    _log("starting tts-server")
     env = os.environ.copy()
     env["PORT"] = str(BACKEND_PORT)
     _process = subprocess.Popen(
@@ -74,12 +81,12 @@ def _start_backend():
     for _ in range(120):
         try:
             urlopen(f"{BACKEND}/health", timeout=2)
-            print("[proxy] tts-server ready", flush=True)
+            _log("tts-server ready")
             _last_activity = time.monotonic()
             return
         except (URLError, OSError):
             time.sleep(1)
-    print("[proxy] tts-server failed to start", flush=True)
+    _log("tts-server failed to start")
 
 
 def _stop_backend():
@@ -87,7 +94,7 @@ def _stop_backend():
     if not _is_running():
         _process = None
         return
-    print("[proxy] stopping tts-server (idle timeout)", flush=True)
+    _log("stopping tts-server (idle timeout)")
     proc = _process
     if proc is None:
         return
@@ -99,7 +106,7 @@ def _stop_backend():
         os.killpg(pgid, signal.SIGKILL)
         proc.wait()
     _process = None
-    print("[proxy] tts-server stopped", flush=True)
+    _log("tts-server stopped")
 
 
 class ProxyHandler(BaseHTTPRequestHandler):
@@ -122,6 +129,9 @@ class ProxyHandler(BaseHTTPRequestHandler):
         if self.path == "/v1/audio/speech" and body:
             data = json.loads(body)
             requested_format = data.get("response_format", "wav")
+            voice = data.get("voice", "?")
+            text_len = len(data.get("input", ""))
+            _log(f"speech request: voice={voice} format={requested_format} text={text_len} chars")
             data["response_format"] = "wav"
             if DEFAULT_INSTRUCT and "instruct" not in data:
                 data["instruct"] = DEFAULT_INSTRUCT
@@ -201,7 +211,7 @@ class ProxyHandler(BaseHTTPRequestHandler):
             self.wfile.write(str(e).encode())
 
     def log_message(self, fmt, *args):
-        sys.stderr.write(f"[proxy] {fmt % args}\n")
+        _log(fmt % args)
 
 
 def _idle_watchdog():
@@ -230,10 +240,10 @@ if __name__ == "__main__":
 
     if IDLE_TIMEOUT > 0:
         threading.Thread(target=_idle_watchdog, daemon=True).start()
-        print(f"[proxy] idle timeout: {IDLE_TIMEOUT}s", flush=True)
+        _log(f"idle timeout: {IDLE_TIMEOUT}s")
 
     server = ThreadedHTTPServer(("0.0.0.0", port), ProxyHandler)
-    print(f"[proxy] listening on 0.0.0.0:{port}, lazy_load={lazy}", flush=True)
+    _log(f"listening on 0.0.0.0:{port}, lazy_load={lazy}")
 
     def _shutdown(sig, frame):
         _stop_backend()
