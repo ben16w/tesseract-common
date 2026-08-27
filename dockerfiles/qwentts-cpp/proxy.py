@@ -15,7 +15,7 @@ from urllib.error import HTTPError, URLError
 
 BACKEND_PORT = int(os.environ.get("TTS_BACKEND_PORT", "8081"))
 BACKEND = f"http://127.0.0.1:{BACKEND_PORT}"
-DEFAULT_INSTRUCT = os.environ.get("TTS_DEFAULT_INSTRUCT", "")
+DEFAULT_INSTRUCT = os.environ.get("TTS_DEFAULT_INSTRUCTIONS", "")
 IDLE_TIMEOUT = int(os.environ.get("TTS_IDLE_TIMEOUT_SECONDS", "0"))
 MAX_NEW_TOKENS = int(os.environ.get("TTS_MAX_NEW_TOKENS", "4096"))
 
@@ -139,8 +139,8 @@ class ProxyHandler(BaseHTTPRequestHandler):
                 requested_format = None
             else:
                 data["response_format"] = "wav"
-            if DEFAULT_INSTRUCT and "instruct" not in data:
-                data["instruct"] = DEFAULT_INSTRUCT
+            if DEFAULT_INSTRUCT and "instructions" not in data:
+                data["instructions"] = DEFAULT_INSTRUCT
             if "max_new_tokens" not in data:
                 data["max_new_tokens"] = MAX_NEW_TOKENS
             body = json.dumps(data).encode()

@@ -15,7 +15,7 @@ services:
       MODEL_PATH: "/models/qwen-talker-1.7b-customvoice-Q8_0.gguf"
       CODEC_PATH: "/models/qwen-tokenizer-12hz-Q8_0.gguf"
       TTS_LANG: "English"
-      TTS_DEFAULT_INSTRUCT: "Speak in a clear, native English accent."
+      TTS_DEFAULT_INSTRUCTIONS: "Speak in a clear, native English accent."
       TTS_IDLE_TIMEOUT_SECONDS: "600"
       TTS_MAX_NEW_TOKENS: "4096"
       TTS_LAZY_LOAD: "true"
