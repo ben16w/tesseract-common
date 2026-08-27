@@ -22,6 +22,7 @@ SUPPORTED_FORMATS = {"pcm", "wav"}
 _lock = threading.Lock()
 _process = None
 _last_activity = 0.0
+_active_requests = 0
 
 
 def _is_running():
@@ -79,7 +80,7 @@ class ProxyHandler(BaseHTTPRequestHandler):
         self._proxy()
 
     def do_POST(self):
-        global _last_activity
+        global _last_activity, _active_requests
         length = int(self.headers.get("Content-Length", 0))
         body = self.rfile.read(length) if length else b""
 
@@ -92,8 +93,12 @@ class ProxyHandler(BaseHTTPRequestHandler):
             body = json.dumps(data).encode()
 
         self._start_if_needed()
-        _last_activity = time.monotonic()
-        self._proxy(body)
+        _active_requests += 1
+        try:
+            self._proxy(body)
+        finally:
+            _active_requests -= 1
+            _last_activity = time.monotonic()
 
     def _start_if_needed(self):
         with _lock:
@@ -133,11 +138,13 @@ class ProxyHandler(BaseHTTPRequestHandler):
 def _idle_watchdog():
     while True:
         time.sleep(30)
-        if not _is_running():
+        if not _is_running() or _active_requests > 0:
             continue
         idle = time.monotonic() - _last_activity
         if idle >= IDLE_TIMEOUT:
             with _lock:
+                if _active_requests > 0:
+                    continue
                 _stop_backend()
 
 
