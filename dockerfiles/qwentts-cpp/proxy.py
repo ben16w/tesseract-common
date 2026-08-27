@@ -18,7 +18,37 @@ BACKEND = f"http://127.0.0.1:{BACKEND_PORT}"
 DEFAULT_INSTRUCT = os.environ.get("TTS_DEFAULT_INSTRUCT", "")
 IDLE_TIMEOUT = int(os.environ.get("TTS_IDLE_TIMEOUT_SECONDS", "0"))
 MAX_NEW_TOKENS = int(os.environ.get("TTS_MAX_NEW_TOKENS", "4096"))
-SUPPORTED_FORMATS = {"pcm", "wav"}
+
+CONTENT_TYPES = {
+    "wav": "audio/wav",
+    "mp3": "audio/mpeg",
+    "opus": "audio/opus",
+    "aac": "audio/aac",
+    "flac": "audio/flac",
+    "pcm": "audio/pcm",
+}
+FFMPEG_ARGS = {
+    "mp3": ["-f", "mp3", "-codec:a", "libmp3lame", "-q:a", "2"],
+    "opus": ["-f", "opus", "-codec:a", "libopus"],
+    "aac": ["-f", "adts", "-codec:a", "aac"],
+    "flac": ["-f", "flac", "-codec:a", "flac"],
+}
+
+
+def _convert_audio(wav_data: bytes, fmt: str) -> bytes:
+    """Convert WAV to the requested format using ffmpeg."""
+    if fmt in ("wav", "pcm"):
+        return wav_data
+    args = FFMPEG_ARGS.get(fmt)
+    if not args:
+        return wav_data
+    proc = subprocess.run(
+        ["ffmpeg", "-i", "pipe:0", "-y"] + args + ["pipe:1"],
+        input=wav_data, capture_output=True,
+    )
+    if proc.returncode != 0:
+        raise RuntimeError(f"ffmpeg failed: {proc.stderr.decode()[:200]}")
+    return proc.stdout
 
 _lock = threading.Lock()
 _process = None
@@ -91,18 +121,23 @@ class ProxyHandler(BaseHTTPRequestHandler):
 
         if self.path == "/v1/audio/speech" and body:
             data = json.loads(body)
-            if data.get("response_format", "wav") not in SUPPORTED_FORMATS:
-                data["response_format"] = "wav"
+            requested_format = data.get("response_format", "wav")
+            data["response_format"] = "wav"
             if DEFAULT_INSTRUCT and "instruct" not in data:
                 data["instruct"] = DEFAULT_INSTRUCT
             if "max_new_tokens" not in data:
                 data["max_new_tokens"] = MAX_NEW_TOKENS
             body = json.dumps(data).encode()
+        else:
+            requested_format = None
 
         self._start_if_needed()
         _active_requests += 1
         try:
-            self._proxy(body)
+            if requested_format and requested_format != "wav":
+                self._proxy_and_convert(body, requested_format)
+            else:
+                self._proxy(body)
         finally:
             _active_requests -= 1
             _last_activity = time.monotonic()
@@ -111,6 +146,33 @@ class ProxyHandler(BaseHTTPRequestHandler):
         with _lock:
             if not _is_running():
                 _start_backend()
+
+    def _proxy_and_convert(self, body, fmt):
+        """Fetch WAV from backend, convert to requested format, send to client."""
+        url = BACKEND + self.path
+        headers = {k: v for k, v in self.headers.items() if k.lower() != "host"}
+        if body:
+            headers["Content-Length"] = str(len(body))
+        try:
+            req = Request(url, data=body, headers=headers, method=self.command)
+            with urlopen(req, timeout=300) as resp:
+                wav_data = resp.read()
+            converted = _convert_audio(wav_data, fmt)
+            content_type = CONTENT_TYPES.get(fmt, "application/octet-stream")
+            self.send_response(200)
+            self.send_header("Content-Type", content_type)
+            self.send_header("Content-Length", str(len(converted)))
+            self.end_headers()
+            self.wfile.write(converted)
+        except HTTPError as e:
+            self.send_response(e.code)
+            self.send_header("Content-Type", "application/json")
+            self.end_headers()
+            self.wfile.write(e.read())
+        except Exception as e:
+            self.send_response(502)
+            self.end_headers()
+            self.wfile.write(str(e).encode())
 
     def _proxy(self, body=None):
         url = BACKEND + self.path

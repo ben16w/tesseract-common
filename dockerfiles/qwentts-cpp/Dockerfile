@@ -1,7 +1,7 @@
 FROM ghcr.io/serveurpersocom/qwentts.cpp:vulkan
 
 RUN apt-get update -qq && apt-get install -y -qq --no-install-recommends \
-        python3 \
+        python3 ffmpeg \
     > /dev/null && rm -rf /var/lib/apt/lists/*
 
 ARG BASE_URL="https://huggingface.co/Serveurperso/Qwen3-TTS-GGUF/resolve/main"
