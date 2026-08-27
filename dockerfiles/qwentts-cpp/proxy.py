@@ -129,10 +129,16 @@ class ProxyHandler(BaseHTTPRequestHandler):
         if self.path == "/v1/audio/speech" and body:
             data = json.loads(body)
             requested_format = data.get("response_format", "wav")
+            is_streaming = data.get("stream", False)
             voice = data.get("voice", "?")
             text_len = len(data.get("input", ""))
-            _log(f"speech request: voice={voice} format={requested_format} text={text_len} chars")
-            data["response_format"] = "wav"
+            _log(f"speech request: voice={voice} format={requested_format} text={text_len} chars stream={is_streaming}")
+            if is_streaming:
+                # Streaming only supports pcm passthrough
+                data["response_format"] = "pcm"
+                requested_format = None
+            else:
+                data["response_format"] = "wav"
             if DEFAULT_INSTRUCT and "instruct" not in data:
                 data["instruct"] = DEFAULT_INSTRUCT
             if "max_new_tokens" not in data:
