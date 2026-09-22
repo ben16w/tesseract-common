@@ -1,0 +1,18 @@
+FROM erikvl87/languagetool
+
+USER root
+
+RUN apk add --no-cache curl unzip
+
+ARG NGRAMS_URL="http://languagetool.org/download/ngram-data"
+ARG NGRAMS_FILE
+RUN if [ -n "$NGRAMS_FILE" ]; then \
+        mkdir -p /ngrams && \
+        curl -L --progress-bar -o "/tmp/$NGRAMS_FILE" "$NGRAMS_URL/$NGRAMS_FILE" && \
+        unzip -q "/tmp/$NGRAMS_FILE" -d /ngrams && \
+        rm "/tmp/$NGRAMS_FILE" && \
+        chown -R languagetool:languagetool /ngrams && \
+        echo "languageModel=/ngrams" >> /LanguageTool/config.properties; \
+    fi
+
+USER languagetool
