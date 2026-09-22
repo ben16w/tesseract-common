@@ -11,5 +11,5 @@ services:
     ports:
       - 8010:8010
     environment:
-      - Java_Xms=512m
-      - Java_Xmx=1g
+      - Java_Xms=256m
+      - Java_Xmx=512m
