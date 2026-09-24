@@ -60,7 +60,7 @@ services:
       BROKER_SECRET: "${TESSERACT_ROMM_BROKER_SECRET}"
     volumes:
       - "${TESSERACT_APPDATA_PATH}/romm_webstation:/config"
-      - "${TESSERACT_DATA_PATH}/Games/Romm:/romm/library:ro"
+      - "${TESSERACT_DATA_PATH}/Romm:/romm/library:ro"
 
 volumes:
   romm_cache:
