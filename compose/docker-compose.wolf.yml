@@ -1,0 +1,23 @@
+---
+
+services:
+  wolf:
+    image: ghcr.io/games-on-whales/wolf:stable
+    container_name: wolf
+    restart: always
+    network_mode: host
+    devices:
+      - /dev/dri/renderD129:/dev/dri/renderD129
+      - /dev/uinput
+      - /dev/uhid
+    device_cgroup_rules:
+      - 'c 13:* rmw'
+    environment:
+      WOLF_DEFAULT_RUN_UID: ${TESSERACT_UID}
+      WOLF_DEFAULT_RUN_GID: ${TESSERACT_GID}
+      WOLF_RENDER_NODE: /dev/dri/renderD129
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /dev:/dev:rw
+      - /run/udev:/run/udev:rw
+      - "${TESSERACT_APPDATA_PATH}/wolf:/etc/wolf"
