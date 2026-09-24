@@ -55,6 +55,7 @@ services:
       PGID: "${TESSERACT_GID}"
       TZ: "${TESSERACT_TZ}"
       DRINODE: "/dev/dri/renderD129"
+      DRI_NODE: "/dev/dri/renderD129"
       SUBFOLDER: "/streaming/"
       BROKER_SECRET: "${TESSERACT_ROMM_BROKER_SECRET}"
     volumes:
