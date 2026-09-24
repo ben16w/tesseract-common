@@ -23,7 +23,7 @@ services:
       WEB_SERVER_CONCURRENCY: 3
       SCAN_WORKERS: 2
     volumes:
-      - "${TESSERACT_DATA_PATH}/Games/Romm:/romm/library"
+      - "${TESSERACT_DATA_PATH}/Romm:/romm/library"
       - "${TESSERACT_APPDATA_PATH}/romm_resources:/romm/resources"
       - "${TESSERACT_APPDATA_PATH}/romm_config:/romm/config"
       - "${TESSERACT_APPDATA_PATH}/romm_assets:/romm/assets"
