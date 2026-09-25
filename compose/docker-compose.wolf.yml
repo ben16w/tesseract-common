@@ -20,4 +20,4 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
       - /dev:/dev:rw
       - /run/udev:/run/udev:rw
-      - "${TESSERACT_APPDATA_PATH}/wolf:/etc/wolf"
+      - "${TESSERACT_APPDATA_PATH}/wolf_data:/etc/wolf"
