@@ -11,8 +11,8 @@ services:
     volumes:
       - "${TESSERACT_APPDATA_PATH}/audiobookshelf_config:/config"
       - "${TESSERACT_APPDATA_PATH}/audiobookshelf_metadata:/metadata"
-      - "${TESSERACT_DATA_PATH}/Audio/Audiobooks:/audiobooks"
-      - "${TESSERACT_DATA_PATH}/Audio/Podcasts:/podcasts"
+      - "${TESSERACT_DATA_PATH}/Audiobookshelf/Audiobooks:/audiobooks"
+      - "${TESSERACT_DATA_PATH}/Audiobookshelf/Podcasts:/podcasts"
 
   audiobookshelf_theme:
     container_name: audiobookshelf_theme
