@@ -13,3 +13,4 @@ services:
       - "${TESSERACT_APPDATA_PATH}/sillytavern_plugins:/home/node/app/plugins"
       - "${TESSERACT_APPDATA_PATH}/sillytavern_config:/home/node/app/config"
       - "${TESSERACT_APPDATA_PATH}/sillytavern_data:/home/node/app/data"
+      - "${TESSERACT_APPDATA_PATH}/sillytavern_extensions:/home/node/app/public/scripts/extensions/third-party"
