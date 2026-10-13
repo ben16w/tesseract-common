@@ -13,6 +13,7 @@ services:
       CORS_ALLOW_ORIGIN: "https://chat.${TESSERACT_DOMAIN}"
       ENABLE_OPENAI_API: True
       OPENAI_API_BASE_URL: "https://ai.${TESSERACT_DOMAIN}"
+      OPENAI_API_KEY: "${TESSERACT_LITELLM_API_KEY}"
       ENABLE_CONTEXT_COMPACTION: True
       CONTEXT_COMPACTION_TOKEN_THRESHOLD: 80000 # 128K is a resonable minimum context floor.
       ENABLE_OLLAMA_API: False
