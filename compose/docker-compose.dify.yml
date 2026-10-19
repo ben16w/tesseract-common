@@ -14,11 +14,15 @@ services:
         condition: service_started
       dify_plugin_daemon:
         condition: service_started
+      dify_sandbox:
+        condition: service_started
     ports:
       - "5001:5001"
     environment:
       MODE: api
       MIGRATION_ENABLED: "true"
+      SERVER_WORKER_AMOUNT: 2
+      SERVER_WORKER_CONNECTIONS: 50
       SECRET_KEY: ${TESSERACT_DIFY_KEY}
       DB_HOST: dify_db
       DB_USERNAME: dify
@@ -31,6 +35,8 @@ services:
       PLUGIN_DAEMON_URL: http://dify_plugin_daemon:5002
       PLUGIN_DAEMON_KEY: ${TESSERACT_DIFY_KEY}
       INNER_API_KEY_FOR_PLUGIN: ${TESSERACT_DIFY_KEY}
+      CODE_EXECUTION_ENDPOINT: http://dify_sandbox:8194
+      CODE_EXECUTION_API_KEY: ${TESSERACT_DIFY_KEY}
       CONSOLE_CORS_ALLOW_ORIGINS: "http://${TESSERACT_DOMAIN}:3010"
       WEB_API_CORS_ALLOW_ORIGINS: "http://${TESSERACT_DOMAIN}:3010"
     volumes:
@@ -43,6 +49,8 @@ services:
     depends_on:
       dify_db:
         condition: service_started
+      dify_sandbox:
+        condition: service_started
       dify_plugin_daemon:
         condition: service_started
       dify_redis:
@@ -52,6 +60,8 @@ services:
     environment:
       MODE: worker
       MIGRATION_ENABLED: "true"
+      SERVER_WORKER_AMOUNT: 2
+      SERVER_WORKER_CONNECTIONS: 50
       SECRET_KEY: ${TESSERACT_DIFY_KEY}
       DB_HOST: dify_db
       DB_USERNAME: dify
@@ -64,6 +74,8 @@ services:
       PLUGIN_DAEMON_URL: http://dify_plugin_daemon:5002
       PLUGIN_DAEMON_KEY: ${TESSERACT_DIFY_KEY}
       INNER_API_KEY_FOR_PLUGIN: ${TESSERACT_DIFY_KEY}
+      CODE_EXECUTION_ENDPOINT: http://dify_sandbox:8194
+      CODE_EXECUTION_API_KEY: ${TESSERACT_DIFY_KEY}
     volumes:
       - "${TESSERACT_APPDATA_PATH}/dify_storage:/app/api/storage"
 
@@ -115,6 +127,20 @@ services:
       PLUGIN_STORAGE_LOCAL_ROOT: /app/storage
     volumes:
       - "${TESSERACT_APPDATA_PATH}/dify_plugin:/app/storage"
+
+  dify_sandbox:
+    image: langgenius/dify-sandbox:0.2.15
+    container_name: dify_sandbox
+    restart: always
+    environment:
+      API_KEY: ${TESSERACT_DIFY_KEY}
+      GIN_MODE: release
+      WORKER_TIMEOUT: 15
+      ENABLE_NETWORK: "false"
+      SANDBOX_PORT: 8194
+    volumes:
+      - "${TESSERACT_APPDATA_PATH}/dify_sandbox/dependencies:/dependencies"
+      - "${TESSERACT_APPDATA_PATH}/dify_sandbox/conf:/conf"
 
   dify_web:
     image: langgenius/dify-web:1.17.1
