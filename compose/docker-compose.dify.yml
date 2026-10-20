@@ -24,6 +24,7 @@ services:
       SERVER_WORKER_AMOUNT: 2
       SERVER_WORKER_CONNECTIONS: 50
       SECRET_KEY: ${TESSERACT_DIFY_KEY}
+      VECTOR_STORE: weaviate
       DB_HOST: dify_db
       DB_USERNAME: dify
       DB_PASSWORD: "${TESSERACT_SQL_PASSWORD}"
@@ -63,6 +64,7 @@ services:
       SERVER_WORKER_AMOUNT: 2
       SERVER_WORKER_CONNECTIONS: 50
       SECRET_KEY: ${TESSERACT_DIFY_KEY}
+      VECTOR_STORE: weaviate
       DB_HOST: dify_db
       DB_USERNAME: dify
       DB_PASSWORD: "${TESSERACT_SQL_PASSWORD}"
@@ -92,6 +94,7 @@ services:
       MODE: beat
       MIGRATION_ENABLED: "true"
       SECRET_KEY: ${TESSERACT_DIFY_KEY}
+      VECTOR_STORE: weaviate
       DB_HOST: dify_db
       DB_USERNAME: dify
       DB_PASSWORD: "${TESSERACT_SQL_PASSWORD}"
@@ -136,11 +139,8 @@ services:
       API_KEY: ${TESSERACT_DIFY_KEY}
       GIN_MODE: release
       WORKER_TIMEOUT: 15
-      ENABLE_NETWORK: "false"
+      ENABLE_NETWORK: "true"
       SANDBOX_PORT: 8194
-    volumes:
-      - "${TESSERACT_APPDATA_PATH}/dify_sandbox/dependencies:/dependencies"
-      - "${TESSERACT_APPDATA_PATH}/dify_sandbox/conf:/conf"
 
   dify_web:
     image: langgenius/dify-web:1.17.1
