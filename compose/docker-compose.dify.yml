@@ -38,6 +38,9 @@ services:
       INNER_API_KEY_FOR_PLUGIN: ${TESSERACT_DIFY_KEY}
       CODE_EXECUTION_ENDPOINT: http://dify_sandbox:8194
       CODE_EXECUTION_API_KEY: ${TESSERACT_DIFY_KEY}
+      CONSOLE_API_URL: "https://dify-api.${TESSERACT_DOMAIN}"
+      CONSOLE_WEB_URL: "https://dify.${TESSERACT_DOMAIN}"
+      COOKIE_DOMAIN: ".${TESSERACT_DOMAIN}"
       CONSOLE_CORS_ALLOW_ORIGINS: "https://dify.${TESSERACT_DOMAIN}"
       WEB_API_CORS_ALLOW_ORIGINS: "https://dify.${TESSERACT_DOMAIN}"
     volumes:
@@ -155,6 +158,7 @@ services:
       APP_API_URL: "https://dify-api.${TESSERACT_DOMAIN}"
       SERVER_CONSOLE_API_URL: http://dify_api:5001
       SERVER_APP_API_URL: http://dify_api:5001
+      NEXT_PUBLIC_COOKIE_DOMAIN: ".${TESSERACT_DOMAIN}"
       NEXT_TELEMETRY_DISABLED: "1"
 
   dify_db:
