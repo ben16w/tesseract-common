@@ -162,6 +162,22 @@ services:
       NEXT_PUBLIC_COOKIE_DOMAIN: ".${TESSERACT_DOMAIN}"
       NEXT_TELEMETRY_DISABLED: "1"
 
+  dify_telegram_bridge:
+    build:
+      context: ../dockerfiles/dify-telegram-bridge
+    container_name: dify_telegram_bridge
+    restart: always
+    depends_on:
+      dify_api:
+        condition: service_started
+    environment:
+      TELEGRAM_BOT_TOKEN: "${TESSERACT_TELEGRAM_BOT_TOKEN}"
+      TELEGRAM_ALLOWED_USER_IDS: "${TESSERACT_TELEGRAM_ALLOWED_USER_IDS:-}"
+      DIFY_APP_API_KEY: "${TESSERACT_DIFY_APP_API_KEY}"
+      DIFY_API_URL: "https://dify-api.${TESSERACT_DOMAIN}/v1"
+    volumes:
+      - "${TESSERACT_APPDATA_PATH}/dify_telegram_bridge:/data"
+
   dify_db:
     image: postgres:15-alpine
     container_name: dify_db
