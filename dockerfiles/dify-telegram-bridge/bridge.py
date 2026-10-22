@@ -35,6 +35,10 @@ class DifyError(RuntimeError):
     pass
 
 
+def redact_url(url):
+    return re.sub(r"/bot[^/]+/", "/bot<redacted>/", url)
+
+
 def request_json(url, payload, headers=None, timeout=60):
     request = Request(
         url,
@@ -42,22 +46,35 @@ def request_json(url, payload, headers=None, timeout=60):
         headers={"Content-Type": "application/json", **(headers or {})},
         method="POST",
     )
+    safe_url = redact_url(url)
     try:
         with urlopen(request, timeout=timeout) as response:
             return json.load(response)
     except HTTPError as error:
         body = error.read().decode(errors="replace")
-        raise RuntimeError(f"HTTP {error.code} from {url}: {body[:500]}") from error
+        raise RuntimeError(f"HTTP {error.code} from {safe_url}: {body[:500]}") from error
     except (URLError, TimeoutError) as error:
-        raise RuntimeError(f"Request to {url} failed: {error}") from error
+        raise RuntimeError(f"Request to {safe_url} failed: {error}") from error
 
 
 def telegram(method, payload, timeout=60):
-    result = request_json(
-        f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/{method}",
-        payload,
-        timeout=timeout,
-    )
+    delay = 1
+    for attempt in range(4):
+        try:
+            result = request_json(
+                f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/{method}",
+                payload,
+                timeout=timeout,
+            )
+            break
+        except RuntimeError as error:
+            message = str(error)
+            retryable = not message.startswith("HTTP ") or message.startswith(("HTTP 429", "HTTP 5"))
+            if attempt == 3 or not retryable:
+                raise
+            LOG.warning("Telegram %s failed (%s); retrying in %ss", method, error, delay)
+            time.sleep(delay)
+            delay *= 2
     if not result.get("ok"):
         raise RuntimeError(f"Telegram {method} failed: {result.get('description', 'unknown error')}")
     return result["result"]

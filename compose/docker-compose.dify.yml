@@ -174,7 +174,7 @@ services:
       TELEGRAM_BOT_TOKEN: "${TESSERACT_TELEGRAM_BOT_TOKEN}"
       TELEGRAM_ALLOWED_USER_IDS: "${TESSERACT_TELEGRAM_ALLOWED_USER_IDS:-}"
       DIFY_APP_API_KEY: "${TESSERACT_DIFY_APP_API_KEY}"
-      DIFY_API_URL: "https://dify-api.${TESSERACT_DOMAIN}/v1"
+      DIFY_API_URL: "http://dify_api:5001/v1"
     volumes:
       - "${TESSERACT_APPDATA_PATH}/dify_telegram_bridge:/data"
 
