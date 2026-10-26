@@ -40,6 +40,7 @@ services:
       CODE_EXECUTION_API_KEY: ${TESSERACT_DIFY_KEY}
       APP_WEB_URL: "https://dify.${TESSERACT_DOMAIN}"
       CONSOLE_API_URL: "https://dify-api.${TESSERACT_DOMAIN}"
+      SERVICE_API_URL: "https://dify-api.${TESSERACT_DOMAIN}"
       CONSOLE_WEB_URL: "https://dify.${TESSERACT_DOMAIN}"
       COOKIE_DOMAIN: ".${TESSERACT_DOMAIN}"
       CONSOLE_CORS_ALLOW_ORIGINS: "https://dify.${TESSERACT_DOMAIN}"
@@ -64,6 +65,7 @@ services:
         condition: service_started
     environment:
       MODE: worker
+      CELERY_WORKER_AMOUNT: 6
       MIGRATION_ENABLED: "true"
       SERVER_WORKER_AMOUNT: 2
       SERVER_WORKER_CONNECTIONS: 50
