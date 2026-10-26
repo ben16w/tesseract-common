@@ -7,8 +7,10 @@ import os
 import re
 import threading
 import time
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.error import HTTPError, URLError
+from urllib.parse import urlencode
 from urllib.request import Request, urlopen
 
 TELEGRAM_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "")
@@ -16,11 +18,8 @@ DIFY_API_KEY = os.environ.get("DIFY_APP_API_KEY", "")
 DIFY_API_URL = os.environ.get("DIFY_API_URL", "http://dify_api:5001/v1").rstrip("/")
 STATE_PATH = Path(os.environ.get("STATE_PATH", "/data/state.json"))
 POLL_TIMEOUT = int(os.environ.get("POLL_TIMEOUT", "30"))
-ALLOWED_USER_IDS = {
-    int(value.strip())
-    for value in os.environ.get("TELEGRAM_ALLOWED_USER_IDS", "").split(",")
-    if value.strip()
-}
+NUDGE_PORT = int(os.environ.get("NUDGE_PORT", "8080"))
+ALLOWED_USER_ID = None
 
 logging.basicConfig(
     level=os.environ.get("LOG_LEVEL", "INFO").upper(),
@@ -39,13 +38,13 @@ def redact_url(url):
     return re.sub(r"/bot[^/]+/", "/bot<redacted>/", url)
 
 
-def request_json(url, payload, headers=None, timeout=60):
-    request = Request(
-        url,
-        data=json.dumps(payload).encode(),
-        headers={"Content-Type": "application/json", **(headers or {})},
-        method="POST",
-    )
+def request_json(url, payload=None, headers=None, timeout=60, method="POST"):
+    headers = dict(headers or {})
+    data = None
+    if payload is not None:
+        data = json.dumps(payload).encode()
+        headers.setdefault("Content-Type", "application/json")
+    request = Request(url, data=data, headers=headers, method=method)
     safe_url = redact_url(url)
     try:
         with urlopen(request, timeout=timeout) as response:
@@ -125,6 +124,65 @@ def send_message(chat_id, text):
         telegram("sendMessage", {"chat_id": chat_id, "text": text[start:start + 4096]})
 
 
+def latest_answer(chat_id, conversation_id):
+    query = urlencode({
+        "conversation_id": conversation_id,
+        "user": f"telegram-{chat_id}",
+        "limit": 1,
+    })
+    result = request_json(
+        f"{DIFY_API_URL}/messages?{query}",
+        headers={"Authorization": f"Bearer {DIFY_API_KEY}"},
+        method="GET",
+    )
+    messages = result.get("data") or []
+    if not messages:
+        raise DifyError("Dify conversation has no messages")
+    return strip_thinking(messages[0].get("answer", ""))
+
+
+def send_latest(chat_id):
+    conversation_id = load_state()["conversations"].get(str(chat_id))
+    if not conversation_id:
+        raise KeyError(chat_id)
+    send_message(chat_id, latest_answer(chat_id, conversation_id))
+    LOG.info("Forwarded latest reply to telegram-%s", chat_id)
+
+
+class NudgeHandler(BaseHTTPRequestHandler):
+    def do_POST(self):
+        if self.path.split("?", 1)[0] != "/nudge":
+            self._reply(404, {"error": "not found"})
+            return
+        try:
+            send_latest(ALLOWED_USER_ID)
+        except KeyError:
+            self._reply(404, {"error": "no conversation"})
+            return
+        except Exception as error:
+            LOG.error("Nudge failed for telegram-%s: %s", ALLOWED_USER_ID, error)
+            self._reply(502, {"error": "could not forward reply"})
+            return
+        self._reply(200, {"sent": True})
+
+    def _reply(self, status, payload):
+        body = json.dumps(payload).encode()
+        self.send_response(status)
+        self.send_header("Content-Type", "application/json")
+        self.send_header("Content-Length", str(len(body)))
+        self.end_headers()
+        self.wfile.write(body)
+
+    def log_message(self, fmt, *args):
+        LOG.info(fmt, *args)
+
+
+def serve_nudge():
+    server = ThreadingHTTPServer(("0.0.0.0", NUDGE_PORT), NudgeHandler)
+    LOG.info("Nudge endpoint listening on %s", NUDGE_PORT)
+    server.serve_forever()
+
+
 def ask_dify(chat_id, text, state):
     conversation_id = state["conversations"].get(str(chat_id), "")
     try:
@@ -154,8 +212,8 @@ def handle_message(message, state):
 
     if chat_id is None or user_id is None or not text:
         return
-    if ALLOWED_USER_IDS and user_id not in ALLOWED_USER_IDS:
-        LOG.warning("Ignoring message from unauthorized Telegram user %s", user_id)
+    if user_id != ALLOWED_USER_ID or chat_id != ALLOWED_USER_ID:
+        LOG.warning("Ignoring message from Telegram user %s in chat %s", user_id, chat_id)
         return
     LOG.info("Message from user telegram-%s", chat_id)
     if text.split(maxsplit=1)[0].split("@", 1)[0] in {"/start", "/new"}:
@@ -174,13 +232,21 @@ def handle_message(message, state):
 
 
 def validate_config():
+    global ALLOWED_USER_ID
     missing = []
     if not TELEGRAM_TOKEN:
         missing.append("TELEGRAM_BOT_TOKEN")
     if not DIFY_API_KEY:
         missing.append("DIFY_APP_API_KEY")
+    raw_user_id = os.environ.get("TELEGRAM_ALLOWED_USER_ID", "").strip()
+    if not raw_user_id:
+        missing.append("TELEGRAM_ALLOWED_USER_ID")
     if missing:
         raise SystemExit(f"Missing required environment variables: {', '.join(missing)}")
+    try:
+        ALLOWED_USER_ID = int(raw_user_id)
+    except ValueError:
+        raise SystemExit("TELEGRAM_ALLOWED_USER_ID must be a number") from None
 
 
 def main():
@@ -189,8 +255,8 @@ def main():
     bot = telegram("getMe", {})
     telegram("deleteWebhook", {"drop_pending_updates": False})
     LOG.info("Polling Telegram as @%s", bot.get("username"))
-    if not ALLOWED_USER_IDS:
-        LOG.warning("TELEGRAM_ALLOWED_USER_IDS is empty; any Telegram user can use this bot")
+    threading.Thread(target=serve_nudge, daemon=True).start()
+    LOG.info("Accepting Telegram user %s", ALLOWED_USER_ID)
 
     backoff = 1
     while True:
