@@ -7,6 +7,8 @@ services:
     restart: always
     ports:
       - "3000:8000"
+    environment:
+      - AGENT_CANVAS_ALLOW_LAN_SESSION_KEY=true
     volumes:
       - "${TESSERACT_APPDATA_PATH}/openhands_data:/home/openhands/.openhands"
       - /var/run/docker.sock:/var/run/docker.sock
