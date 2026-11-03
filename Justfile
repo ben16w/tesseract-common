@@ -512,7 +512,7 @@ vault env="prod": _venv (_require "inventories/" + env + "/group_vars/all.yml")
     set -euo pipefail
     echo -e "{{info}} Editing Ansible Vault for environment: {{env}}"
     eval "$(just _vault-opts {{env}})"
-    {{venv}}/bin/ansible-vault "${VAULT_OPTS[@]}" edit inventories/{{env}}/group_vars/all.yml
+    {{venv}}/bin/ansible-vault edit "${VAULT_OPTS[@]}" inventories/{{env}}/group_vars/all.yml
     echo -e "{{ok}} Vault edited."
 
 # Open SSH session to a host
