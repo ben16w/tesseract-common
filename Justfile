@@ -72,6 +72,36 @@ _require path:
         exit 1
     fi
 
+# Per-user vault password file for env (created by vault-unlock)
+[no-exit-message]
+_vault-pass-path env:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    echo "/tmp/tesseract-vault-{{env}}-$(id -u)"
+
+# Shell snippet: VAULT_OPTS and ANSIBLE_ASK_VAULT_PASS. eval "$(just _vault-opts env)"
+[no-exit-message]
+_vault-opts env:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    VAULT_FILE="$(just _vault-pass-path {{env}})"
+    if [ -f "${VAULT_FILE}" ]; then
+        printf 'export ANSIBLE_ASK_VAULT_PASS=False\n'
+        printf 'VAULT_OPTS=(--vault-password-file %q)\n' "${VAULT_FILE}"
+    else
+        printf 'VAULT_OPTS=(--ask-vault-pass)\n'
+    fi
+
+# Shell snippet: quiet ansible output unless verbose=true. eval "$(just _ansible-quiet verbose)"
+[no-exit-message]
+_ansible-quiet verbose:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    if [ "{{verbose}}" != "true" ]; then
+        printf 'export ANSIBLE_DISPLAY_SKIPPED_HOSTS=false\n'
+        printf 'export ANSIBLE_DISPLAY_OK_HOSTS=false\n'
+    fi
+
 [no-exit-message]
 _python3:
     #!/usr/bin/env bash
@@ -373,11 +403,9 @@ deploy env="prod" limit="all" tags="all" verbose="false": _venv (_require "inven
     #!/usr/bin/env bash
     set -euo pipefail
     echo -e "{{info}} Deploying playbook for environment: {{env}} (tags={{tags}}, limit={{limit}})"
-    if [ "{{verbose}}" != "true" ]; then
-        export ANSIBLE_DISPLAY_SKIPPED_HOSTS=false
-        export ANSIBLE_DISPLAY_OK_HOSTS=false
-    fi
-    {{venv}}/bin/ansible-playbook -i inventories/{{env}}/hosts.yml playbooks/{{env}}.yml --tags {{tags}} --limit {{limit}}
+    eval "$(just _ansible-quiet {{verbose}})"
+    eval "$(just _vault-opts {{env}})"
+    {{venv}}/bin/ansible-playbook "${VAULT_OPTS[@]}" -i inventories/{{env}}/hosts.yml playbooks/{{env}}.yml --tags {{tags}} --limit {{limit}}
     echo -e "{{ok}} Playbook deployed."
 
 # Deploy a role from a local path directly against hosts
@@ -388,10 +416,8 @@ deploy-role path env="prod" limit="all" verbose="false": _venv (_require path) (
     #!/usr/bin/env bash
     set -euo pipefail
     echo -e "{{info}} Deploying role: {{path}} on environment: {{env}} (limit={{limit}})"
-    if [ "{{verbose}}" != "true" ]; then
-        export ANSIBLE_DISPLAY_SKIPPED_HOSTS=false
-        export ANSIBLE_DISPLAY_OK_HOSTS=false
-    fi
+    eval "$(just _ansible-quiet {{verbose}})"
+    eval "$(just _vault-opts {{env}})"
     role_path=$(realpath "{{path}}")
     role_name=$(basename "${role_path}")
     roles_dir=$(dirname "${role_path}")
@@ -399,6 +425,7 @@ deploy-role path env="prod" limit="all" verbose="false": _venv (_require path) (
     trap "rm -f ${tmpfile}" EXIT
     printf -- '---\n- hosts: all\n  roles:\n    - %s\n' "${role_name}" > "${tmpfile}"
     ANSIBLE_ROLES_PATH="${roles_dir}" {{venv}}/bin/ansible-playbook \
+        "${VAULT_OPTS[@]}" \
         -i inventories/{{env}}/hosts.yml \
         --limit {{limit}} \
         --become \
@@ -414,23 +441,68 @@ check env="prod" limit="all" tags="all" verbose="false": _venv (_require "invent
     #!/usr/bin/env bash
     set -euo pipefail
     echo -e "{{info}} Dry-run playbook for environment: {{env}} (tags={{tags}}, limit={{limit}})"
-    if [ "{{verbose}}" != "true" ]; then
-        export ANSIBLE_DISPLAY_SKIPPED_HOSTS=false
-        export ANSIBLE_DISPLAY_OK_HOSTS=false
-    fi
-    {{venv}}/bin/ansible-playbook -i inventories/{{env}}/hosts.yml playbooks/{{env}}.yml --tags {{tags}} --limit {{limit}} --diff --check
+    eval "$(just _ansible-quiet {{verbose}})"
+    eval "$(just _vault-opts {{env}})"
+    {{venv}}/bin/ansible-playbook "${VAULT_OPTS[@]}" -i inventories/{{env}}/hosts.yml playbooks/{{env}}.yml --tags {{tags}} --limit {{limit}} --diff --check
     echo -e "{{ok}} Dry-run complete."
 
 # ── ops ────────────────────────────────────────────────────────────────────────
 
-# Run an ad-hoc shell command on hosts
+# Cache vault password for agents / non-interactive recipes (mode 600 under /tmp)
+[group('ops')]
+vault-unlock env="prod": _venv (_require "inventories/" + env + "/group_vars/all.yml")
+    #!/usr/bin/env bash
+    set -euo pipefail
+    VAULT_FILE="$(just _vault-pass-path {{env}})"
+    if [ -f "${VAULT_FILE}" ] && {{venv}}/bin/ansible-vault view --vault-password-file "${VAULT_FILE}" \
+        "inventories/{{env}}/group_vars/all.yml" >/dev/null 2>&1; then
+        echo -e "{{ok}} Vault already unlocked for {{env}} (${VAULT_FILE})."
+        exit 0
+    fi
+    echo -e "{{info}} Unlocking vault for environment: {{env}}"
+    read -r -s -p "Vault password: " VAULT_PASS
+    echo
+    umask 077
+    printf '%s' "${VAULT_PASS}" > "${VAULT_FILE}"
+    chmod 600 "${VAULT_FILE}"
+    unset VAULT_PASS
+    if ! {{venv}}/bin/ansible-vault view --vault-password-file "${VAULT_FILE}" \
+        "inventories/{{env}}/group_vars/all.yml" >/dev/null; then
+        rm -f "${VAULT_FILE}"
+        echo -e "{{err}} Invalid vault password." >&2
+        exit 1
+    fi
+    echo -e "{{ok}} Vault unlocked (${VAULT_FILE}). Run 'just vault-lock {{env}}' when done."
+
+# Remove cached vault password file
+[group('ops')]
+vault-lock env="prod":
+    #!/usr/bin/env bash
+    set -euo pipefail
+    VAULT_FILE="$(just _vault-pass-path {{env}})"
+    if [ -f "${VAULT_FILE}" ]; then
+        rm -f "${VAULT_FILE}"
+        echo -e "{{ok}} Vault locked (removed ${VAULT_FILE})."
+    else
+        echo -e "{{skip}} No unlock file for {{env}} (${VAULT_FILE})."
+    fi
+
+# Run an ad-hoc shell command on hosts. Pass --become to run with sudo.
 [group('ops')]
 [arg("limit", long, short="l")]
-shell cmd env="prod" limit="all": _venv (_require "inventories/" + env + "/hosts.yml")
+[arg("become", long, short="b", value="true")]
+shell cmd env="prod" limit="all" become="false": _venv (_require "inventories/" + env + "/hosts.yml")
     #!/usr/bin/env bash
     set -euo pipefail
     echo -e "{{info}} Running shell command on environment: {{env}} (limit={{limit}})"
-    {{venv}}/bin/ansible -i inventories/{{env}}/hosts.yml all -b -m shell -a "{{cmd}}" --limit {{limit}}
+    eval "$(just _vault-opts {{env}})"
+    BECOME_OPTS=()
+    if [ "{{become}}" = "true" ]; then
+        BECOME_OPTS=(-b)
+    fi
+    ARGS="$({{venv}}/bin/python -c 'import json,sys; print(json.dumps({"_raw_params": "{% raw %}" + sys.argv[1] + "{% endraw %}"}))' {{quote(cmd)}})"
+    {{venv}}/bin/ansible "${VAULT_OPTS[@]}" -i inventories/{{env}}/hosts.yml all "${BECOME_OPTS[@]}" \
+        -m shell -a "${ARGS}" --limit {{limit}}
     echo -e "{{ok}} Shell command executed."
 
 # Edit the encrypted vault for the environment
@@ -439,7 +511,8 @@ vault env="prod": _venv (_require "inventories/" + env + "/group_vars/all.yml")
     #!/usr/bin/env bash
     set -euo pipefail
     echo -e "{{info}} Editing Ansible Vault for environment: {{env}}"
-    {{venv}}/bin/ansible-vault edit inventories/{{env}}/group_vars/all.yml
+    eval "$(just _vault-opts {{env}})"
+    {{venv}}/bin/ansible-vault "${VAULT_OPTS[@]}" edit inventories/{{env}}/group_vars/all.yml
     echo -e "{{ok}} Vault edited."
 
 # Open SSH session to a host
@@ -448,6 +521,7 @@ ssh host env="prod": _venv (_require "inventories/" + env + "/hosts.yml")
     #!/usr/bin/env bash
     set -euo pipefail
     echo -e "{{info}} Opening SSH session to host: {{host}} in environment: {{env}}"
+    eval "$(just _vault-opts {{env}})"
 
     EXPR="{{ '{{' }} [
         ansible_ssh_host | default(ansible_host) | default(inventory_hostname),
@@ -457,6 +531,7 @@ ssh host env="prod": _venv (_require "inventories/" + env + "/hosts.yml")
     ] | join('%%') {{ '}}' }}"
     OUTPUT=$(
         {{venv}}/bin/ansible \
+            "${VAULT_OPTS[@]}" \
             -i "inventories/{{env}}/hosts.yml" \
             "{{host}}" \
             -m debug -o \
