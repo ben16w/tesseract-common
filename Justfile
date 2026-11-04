@@ -79,11 +79,13 @@ _vault-pass-path env:
     set -euo pipefail
     echo "/tmp/tesseract-vault-{{env}}-$(id -u)"
 
-# Shell snippet: VAULT_OPTS and ANSIBLE_ASK_VAULT_PASS. eval "$(just _vault-opts env)"
+# Shell snippet: vault args and SSH settings. eval "$(just _vault-opts env)"
 [no-exit-message]
 _vault-opts env:
     #!/usr/bin/env bash
     set -euo pipefail
+    # Password auth cannot accept a new host key interactively. Match `just ssh`.
+    printf 'export ANSIBLE_HOST_KEY_CHECKING=False\n'
     VAULT_FILE="$(just _vault-pass-path {{env}})"
     if [ -f "${VAULT_FILE}" ]; then
         printf 'export ANSIBLE_ASK_VAULT_PASS=False\n'
@@ -467,7 +469,7 @@ vault-unlock env="prod": _venv (_require "inventories/" + env + "/group_vars/all
     chmod 600 "${VAULT_FILE}"
     unset VAULT_PASS
     if ! {{venv}}/bin/ansible-vault view --vault-password-file "${VAULT_FILE}" \
-        "inventories/{{env}}/group_vars/all.yml" >/dev/null; then
+        "inventories/{{env}}/group_vars/all.yml" >/dev/null 2>&1; then
         rm -f "${VAULT_FILE}"
         echo -e "{{err}} Invalid vault password." >&2
         exit 1
