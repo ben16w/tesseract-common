@@ -9,6 +9,7 @@ services:
       - NET_ADMIN
     ports:
       - "9091:9091"
+      - "1080:1080" # Dante SOCKS5 (transmission_socks)
     devices:
       - /dev/net/tun
     dns:
@@ -37,3 +38,20 @@ services:
       - ${TESSERACT_APPDATA_PATH}/transmission_config:/config
       - ${TESSERACT_APPDATA_PATH}/transmission_openvpn_config:/etc/openvpn/custom/
       - "${TESSERACT_LOCAL_PATH}/transmission_downloads:/data"
+
+  transmission_socks:
+    image: wernight/dante
+    container_name: transmission_socks
+    restart: always
+    network_mode: "service:transmission"
+    depends_on:
+      - transmission
+    command:
+      - /bin/sh
+      - -c
+      - |
+        echo "Waiting for VPN to connect . . ."
+        while ! ip link show tun0 >/dev/null 2>&1 || ! ip link show tun0 | grep -q "UP"; do sleep 1; done
+        echo "VPN connected. Starting proxy service . . ."
+        sed -i 's/^\(external:\).*/\1 tun0/' /etc/sockd.conf
+        sockd
