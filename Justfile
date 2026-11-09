@@ -507,6 +507,23 @@ shell cmd env="prod" limit="all" become="false": _venv (_require "inventories/" 
         -m shell -a "${ARGS}" --limit {{limit}}
     echo -e "{{ok}} Shell command executed."
 
+# Run a local script on hosts. Prefer this over shell for multi-line or quote-heavy commands.
+[group('ops')]
+[arg("limit", long, short="l")]
+[arg("become", long, short="b", value="true")]
+shell-script path env="prod" limit="all" become="false": _venv (_require path) (_require "inventories/" + env + "/hosts.yml")
+    #!/usr/bin/env bash
+    set -euo pipefail
+    echo -e "{{info}} Running script on environment: {{env}} (limit={{limit}}): {{path}}"
+    eval "$(just _vault-opts {{env}})"
+    BECOME_OPTS=()
+    if [ "{{become}}" = "true" ]; then
+        BECOME_OPTS=(-b)
+    fi
+    {{venv}}/bin/ansible "${VAULT_OPTS[@]}" -i inventories/{{env}}/hosts.yml all "${BECOME_OPTS[@]}" \
+        -m script -a {{quote(path)}} --limit {{limit}}
+    echo -e "{{ok}} Script executed."
+
 # Edit the encrypted vault for the environment
 [group('ops')]
 vault env="prod": _venv (_require "inventories/" + env + "/group_vars/all.yml")
