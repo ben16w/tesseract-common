@@ -22,7 +22,7 @@ services:
       GITEA__server__SSH_LISTEN_PORT: 2222 # Port for the built-in SSH server.
       GITEA__server__SSH_PORT: 2222 # SSH port displayed in clone URL.
 
-      GITEA__webhook__ALLOWED_HOST_LIST: "*.${TESSERACT_DOMAIN}"
+      GITEA__webhook__ALLOWED_HOST_LIST: "*.${TESSERACT_DOMAIN},private"
 
       GITEA__service__REGISTER_MANUAL_CONFIRM: "true"
       GITEA__service__REQUIRE_SIGNIN_VIEW: "false"
