@@ -8,6 +8,7 @@ services:
       args:
         NGRAMS_FILE: "ngrams-en-20150817.zip"
     container_name: languagetool
+    restart: always
     ports:
       - 8010:8010
     environment:
