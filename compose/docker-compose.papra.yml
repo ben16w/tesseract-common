@@ -15,7 +15,7 @@ services:
       AUTO_TAGGING_ENABLED: true
       OPENAI_BASE_URL: "https://ai.${TESSERACT_DOMAIN}"
       OPENAI_API_KEY: "${TESSERACT_LITELLM_API_KEY}"
-      AI_DEFAULT_MODEL: openai://balanced
+      AI_DEFAULT_MODEL: openai://quick
       EMAILS_DRIVER: smtp
       EMAILS_FROM_ADDRESS: "Papra <${TESSERACT_EMAIL_USERNAME}>"
       SMTP_HOST: "${TESSERACT_EMAIL_HOST}"
