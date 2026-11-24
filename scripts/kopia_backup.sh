@@ -8,8 +8,6 @@ KOPIA_BACKUP_LOG_LEVEL="debug"
 KOPIA_BACKUP_VERIFY_PERCENT="0.3"
 KOPIA_BACKUP_VERIFY_ENABLED="true"
 KOPIA_BACKUP_PARALLELISM="10"
-KOPIA_BACKUP_MAINTENANCE_RETRIES="3"
-KOPIA_BACKUP_MAINTENANCE_RETRY_DELAY="60"
 
 function usage()
 {
@@ -63,32 +61,6 @@ function log()
     fi
 }
 
-# Run full maintenance with retries. Snapshot success is independent of this.
-function run_maintenance()
-{
-    local attempt=1
-    local max_attempts="${KOPIA_BACKUP_MAINTENANCE_RETRIES}"
-    local delay="${KOPIA_BACKUP_MAINTENANCE_RETRY_DELAY}"
-
-    while [ "${attempt}" -le "${max_attempts}" ]; do
-        info "Running Kopia full maintenance (attempt ${attempt}/${max_attempts})"
-        if kopia maintenance run --full \
-            --file-log-level="$KOPIA_BACKUP_LOG_LEVEL" \
-            --log-dir="$KOPIA_BACKUP_LOG_DIR"; then
-            info "Kopia maintenance finished"
-            return 0
-        fi
-        if [ "${attempt}" -lt "${max_attempts}" ]; then
-            info "Kopia maintenance failed; retrying in ${delay}s"
-            sleep "${delay}"
-        fi
-        attempt=$((attempt + 1))
-    done
-
-    info "Kopia maintenance failed after ${max_attempts} attempts; snapshot data is intact"
-    return 0
-}
-
 # Source environment variables from the .env file if it exists
 if [ -f "$SCRIPT_DIR"/.env ]; then
     source "$SCRIPT_DIR"/.env || exit 1
@@ -129,11 +101,9 @@ for backup_dir in "$@"; do
         error_exit "Path $backup_dir empty."
     fi
 
-    # Snapshot without auto-maintenance so transient B2 flakiness during GC
-    # does not fail a successful backup. Maintenance runs separately below.
+    # Everything goes to file. Maybe should be 2> | tee -a file
     kopia snapshot create \
         "$backup_dir" \
-        --no-auto-maintenance \
         --file-log-level="$KOPIA_BACKUP_LOG_LEVEL" \
         --log-dir="$KOPIA_BACKUP_LOG_DIR" \
         --parallel="$KOPIA_BACKUP_PARALLELISM"
@@ -144,13 +114,10 @@ for backup_dir in "$@"; do
 
 done
 
-run_maintenance
-
 if [ "$KOPIA_BACKUP_VERIFY_ENABLED" = "true" ]; then
     info "Starting verification of kopia repository"
 
     kopia snapshot verify \
-        --no-auto-maintenance \
         --verify-files-percent="$KOPIA_BACKUP_VERIFY_PERCENT" \
         --parallel="$KOPIA_BACKUP_PARALLELISM" \
         --file-parallelism="$KOPIA_BACKUP_PARALLELISM"
