@@ -11,7 +11,7 @@ KOPIA_BACKUP_PARALLELISM="10"
 
 function usage()
 {
-    echo "Kopia to BackBlaze backup for specified path."
+    echo "Kopia S3 backup for specified path."
     echo
     exit 0
 }
