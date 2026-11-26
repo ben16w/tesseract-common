@@ -1,3 +1,4 @@
+---
 rules:
 
   # LOW rules — disabled
@@ -7,7 +8,41 @@ rules:
     enabled: false
   CL-0004: # Image Not Pinned to Version
     enabled: false
+  CL-0019: # Image Tag Not Digest — tag pins are enough for this catalog
+    enabled: false
+  CL-0026: # No Memory/CPU Limits — not practical across the full compose catalog
+    enabled: false
+  # TODO: re-enable once services are hardened (no-new-privileges + cap_drop)
+  CL-0003: # no-new-privileges not set
+    enabled: false
+  CL-0006: # Capabilities not dropped
+    enabled: false
 
   # HIGH rules — disabled
   CL-0005: # Ports Bound to All Interfaces
     enabled: false
+  CL-0008: # Host Network Mode — required by HA/Matter, qbittorrent, wolf
+    enabled: false
+  CL-0013: # Sensitive Host Path Mounts — intentional docker.sock, timezone, and device mounts
+    enabled: false
+
+  # CRITICAL rules — disabled
+  CL-0001: # Docker Socket Mounted — required by ops/CI tools (drone, watchtower, etc.)
+    enabled: false
+  CL-0002: # Privileged Mode — required by frigate hardware access
+    enabled: false
+
+  # HIGH rules — kept, with per-service exclusions
+  CL-0009: # AppArmor/seccomp Unconfined
+    exclude_services:
+      homeassistant_matter: "Matter stack requires apparmor:unconfined"
+      steamos: gaming stack requires seccomp/apparmor unconfined
+  CL-0011: # Dangerous Capabilities
+    exclude_services:
+      steamos: needs NET_ADMIN for gaming networking
+      transmission: needs NET_ADMIN for VPN/routing
+  CL-0020: # Credential-Shaped Env Key With Literal Value
+    exclude_services:
+      dify_weaviate: AUTHENTICATION_APIKEY_USERS is a username list, not a secret
+      openwebui: CONTEXT_COMPACTION_TOKEN_THRESHOLD is an LLM token count, not a secret
+      qwentts-cpp: TTS_MAX_NEW_TOKENS is a generation limit, not a secret

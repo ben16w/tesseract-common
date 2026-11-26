@@ -57,6 +57,7 @@ def _convert_audio(wav_data: bytes, fmt: str) -> bytes:
     _log(f"converted wav ({len(wav_data)} bytes) -> {fmt} ({len(proc.stdout)} bytes)")
     return proc.stdout
 
+
 _lock = threading.Lock()
 _process = None
 _last_activity = 0.0

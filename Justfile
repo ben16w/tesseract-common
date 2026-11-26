@@ -164,7 +164,7 @@ lint-docker: _venv
         ! -path "./.venv/*" \
         ! -path "./.ansible/*" \
         ! -path "./ansible_collections/*" \
-        -exec {{venv}}/bin/compose-lint -q {} +
+        -exec {{venv}}/bin/compose-lint -q --skip-suppressed {} +
     echo -e "{{ok}} Docker lint passed."
 
 # Lint Python files with flake8

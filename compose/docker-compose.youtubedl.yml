@@ -27,7 +27,5 @@ services:
     restart: always
     ports:
       - 27017:27017
-    logging:
-      driver: "none"
     volumes:
       - ./db/:/data/db
