@@ -1,4 +1,5 @@
 yamllint
 shellcheck-py
 compose-lint
+hadolint-bin
 flake8

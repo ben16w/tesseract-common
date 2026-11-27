@@ -5,12 +5,12 @@ RUN apt-get update -qq && apt-get install -y -qq --no-install-recommends \
     > /dev/null && rm -rf /var/lib/apt/lists/*
 
 ARG BASE_URL="https://huggingface.co/Serveurperso/Qwen3-TTS-GGUF/resolve/main"
-ARG TALKER
-ARG TOKENIZER
+ARG MODEL_FILE
+ARG CODEC_FILE
 
 RUN mkdir -p /models && \
-    curl -L --progress-bar -o "/models/$TALKER" "$BASE_URL/$TALKER" && \
-    curl -L --progress-bar -o "/models/$TOKENIZER" "$BASE_URL/$TOKENIZER"
+    curl -L --progress-bar -o "/models/$MODEL_FILE" "$BASE_URL/$MODEL_FILE" && \
+    curl -L --progress-bar -o "/models/$CODEC_FILE" "$BASE_URL/$CODEC_FILE"
 
 COPY proxy.py /app/
 

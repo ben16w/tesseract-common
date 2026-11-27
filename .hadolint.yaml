@@ -1,0 +1,6 @@
+---
+ignored:
+  - DL3007  # :latest is intentional for third-party base images
+  - DL3008  # apt version pins are brittle without Renovate
+  - DL3018  # apk version pins are brittle without Renovate
+  - DL3066  # named users from base images are fine for compose hosts

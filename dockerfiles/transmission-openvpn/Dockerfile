@@ -1,4 +1,4 @@
-FROM haugene/transmission-openvpn
+FROM haugene/transmission-openvpn:latest
 
 RUN printf '#!/bin/sh\nexit 101\n' > /usr/sbin/policy-rc.d \
  && chmod +x /usr/sbin/policy-rc.d \

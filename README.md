@@ -49,7 +49,7 @@ This runs the shared lint suite, including:
 
 - YAML linting
 - shell script linting
-- Docker Compose validation
+- Docker Compose and Dockerfile linting
 - Python linting
 - Ansible linting when Ansible content is present
 

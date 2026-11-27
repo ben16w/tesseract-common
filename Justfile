@@ -154,7 +154,7 @@ lint-shell: _venv
         -exec {{venv}}/bin/shellcheck -S warning {} +
     echo -e "{{ok}} Shell lint passed."
 
-# Validate Docker Compose files
+# Validate Docker Compose files and Dockerfiles
 [group('lint')]
 lint-docker: _venv
     #!/usr/bin/env bash
@@ -165,6 +165,12 @@ lint-docker: _venv
         ! -path "./.ansible/*" \
         ! -path "./ansible_collections/*" \
         -exec {{venv}}/bin/compose-lint -q --skip-suppressed {} +
+    echo -e "{{info}} Linting Dockerfiles..."
+    find . -type f \( -name 'Dockerfile' -o -name 'Dockerfile.*' \) \
+        ! -path "./.venv/*" \
+        ! -path "./.ansible/*" \
+        ! -path "./ansible_collections/*" \
+        -exec {{venv}}/bin/hadolint {} +
     echo -e "{{ok}} Docker lint passed."
 
 # Lint Python files with flake8

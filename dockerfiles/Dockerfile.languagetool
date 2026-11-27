@@ -1,4 +1,4 @@
-FROM erikvl87/languagetool
+FROM erikvl87/languagetool:latest
 
 USER root
 
